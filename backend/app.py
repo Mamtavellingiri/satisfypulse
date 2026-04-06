@@ -11,7 +11,7 @@ app.secret_key = 'satisfypulse_secret_key_2024'
 CORS(app, supports_credentials=True, origins=[
     'http://localhost:5000',
     'http://127.0.0.1:5000',
-    'https://satisfypulse.vercel.app'  # Change this to your Vercel URL
+    'https://satisfypulse.vercel.app'
 ])
 
 def get_db():
@@ -581,6 +581,7 @@ def analyze_text_sentiment():
 def test_api():
     return jsonify({'message': 'API is working!', 'status': 'active'})
 
+# ============ FIXED: Only ONE main block ============
 if __name__ == '__main__':
     from database import init_database
     init_database()
@@ -593,8 +594,4 @@ if __name__ == '__main__':
     print("Student: rahul.cs23@bitsathy.ac.in / password123")
     print("Faculty: dr.sasikala@bitsathy.ac.in / faculty123")
     print("="*50 + "\n")
-    if __name__ == '__main__':
-        from database import init_database
-        init_database()
-        app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-    
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
