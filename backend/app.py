@@ -8,7 +8,11 @@ from datetime import datetime
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 app.secret_key = 'satisfypulse_secret_key_2024'
-CORS(app, supports_credentials=True, origins=['http://localhost:5000', 'http://127.0.0.1:5000'])
+CORS(app, supports_credentials=True, origins=[
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+    'https://satisfypulse.vercel.app'  # Change this to your Vercel URL
+])
 
 def get_db():
     conn = sqlite3.connect('satisfypulse.db')
@@ -589,7 +593,8 @@ if __name__ == '__main__':
     print("Student: rahul.cs23@bitsathy.ac.in / password123")
     print("Faculty: dr.sasikala@bitsathy.ac.in / faculty123")
     print("="*50 + "\n")
-    app.run(debug=True, port=5000)if __name__ == '__main__':
-    from database import init_database
-    init_database()
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    if __name__ == '__main__':
+        from database import init_database
+        init_database()
+        app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    
