@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SatisfyPulse - BIT Student Satisfaction System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #48246E 0%, #764ba2 100%);
+            border-radius: 30px;
+            padding: 60px;
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        .hero-section h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        .hero-section p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        .feature-icon {
+            font-size: 40px;
+            color: #48246E;
+            margin-bottom: 15px;
+        }
+        .feature-card {
+            text-align: center;
+            padding: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="purple-bar"></div>
+    <div class="white-bar">
+        <div class="logo">
+            <h1>SatisfyPulse</h1>
+            <p>Bannari Amman Institute of Technology</p>
+        </div>
+        <div class="user-info">
+            <button onclick="location.href='/login.html'" class="logout-btn" style="background: transparent; border: 2px solid #48246E; color: #48246E;">Login</button>
+            <button onclick="location.href='/register.html'" class="logout-btn">Register</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="hero-section">
+            <h2>Your Voice Matters!</h2>
+            <p>Help us improve BIT by sharing your feedback. Real-time sentiment analysis and satisfaction prediction.</p>
+            <button class="btn" onclick="location.href='/login.html'" style="width: auto; padding: 12px 40px; background: white; color: #48246E;">Get Started</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-brain" style="font-size: 40px; margin-bottom: 10px;"></i>
+                <h4>Real-time Sentiment Analysis</h4>
+                <div class="value">AI Powered</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-chart-line" style="font-size: 40px; margin-bottom: 10px;"></i>
+                <h4>Satisfaction Predictor</h4>
+                <div class="value">Smart Analytics</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-clipboard-list" style="font-size: 40px; margin-bottom: 10px;"></i>
+                <h4>Multiple Feedback Categories</h4>
+                <div class="value">5+ Types</div>
+            </div>
+        </div>
+
+        <div class="categories-grid">
+            <div class="category-card" onclick="location.href='/login.html'">
+                <i class="fas fa-chalkboard-user icon"></i>
+                <h4>Faculty Feedback</h4>
+                <p>Rate your instructors' teaching quality</p>
+            </div>
+            <div class="category-card" onclick="location.href='/login.html'">
+                <i class="fas fa-building icon"></i>
+                <h4>Hostel Feedback</h4>
+                <p>Share your hostel experience</p>
+            </div>
+            <div class="category-card" onclick="location.href='/login.html'">
+                <i class="fas fa-utensils icon"></i>
+                <h4>Mess Feedback</h4>
+                <p>Rate food quality and hygiene</p>
+            </div>
+            <div class="category-card" onclick="location.href='/login.html'">
+                <i class="fas fa-school icon"></i>
+                <h4>Infrastructure</h4>
+                <p>Evaluate campus facilities</p>
+            </div>
+            <div class="category-card" onclick="location.href='/login.html'">
+                <i class="fas fa-graduation-cap icon"></i>
+                <h4>Academic Feedback</h4>
+                <p>Course-wise with satisfaction predictor</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 SatisfyPulse - Bannari Amman Institute of Technology</p>
+    </footer>
+</body>
+</html>

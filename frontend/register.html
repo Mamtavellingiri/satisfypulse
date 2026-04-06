@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - SatisfyPulse</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="purple-bar"></div>
+    <div class="white-bar">
+        <div class="logo">
+            <h1>SatisfyPulse</h1>
+            <p>Bannari Amman Institute of Technology</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="form-container">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <i class="fas fa-user-plus" style="font-size: 50px; color: #48246E;"></i>
+                <h2 style="margin-top: 10px;">Student Registration</h2>
+            </div>
+            <div id="alert" style="display: none;"></div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" id="full_name" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email (format: name.departmentYY@bitsathy.ac.in)</label>
+                    <input type="email" id="email" required placeholder="e.g., rahul.cs23@bitsathy.ac.in">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-building"></i> Department</label>
+                    <select id="department" required>
+                        <option value="">Select Department</option>
+                        <option value="COMPUTER SCIENCE AND ENGINEERING">Computer Science and Engineering</option>
+                        <option value="INFORMATION TECHNOLOGY">Information Technology</option>
+                        <option value="ARTIFICIAL INTELLIGENCE AND DATA SCIENCE">AI and Data Science</option>
+                        <option value="ELECTRONICS AND COMMUNICATION ENGINEERING">Electronics and Communication</option>
+                        <option value="MECHANICAL ENGINEERING">Mechanical Engineering</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-check-circle"></i> Confirm Password</label>
+                    <input type="password" id="confirm_password" required>
+                </div>
+                <button type="submit" class="btn">Register</button>
+            </form>
+            <p style="text-align: center; margin-top: 20px;">
+                Already have an account? <a href="/login.html">Login here</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const confirm = document.getElementById('confirm_password').value;
+
+            if (password !== confirm) {
+                showAlert('Passwords do not match!', 'error');
+                return;
+            }
+
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    full_name: document.getElementById('full_name').value,
+                    email: document.getElementById('email').value,
+                    department: document.getElementById('department').value,
+                    password: password,
+                    role: 'student'
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                showAlert('Registration successful! Please login.', 'success');
+                setTimeout(() => window.location.href = '/login.html', 2000);
+            } else {
+                showAlert(data.error, 'error');
+            }
+        });
+
+        function showAlert(msg, type) {
+            const alertDiv = document.getElementById('alert');
+            alertDiv.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'}"></i> ${msg}`;
+            alertDiv.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+            alertDiv.style.display = 'block';
+            setTimeout(() => alertDiv.style.display = 'none', 3000);
+        }
+    </script>
+</body>
+</html>

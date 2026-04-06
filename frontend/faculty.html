@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard - SatisfyPulse</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="purple-bar"></div>
+    <div class="white-bar">
+        <div class="logo">
+            <h1>SatisfyPulse</h1>
+            <p>Bannari Amman Institute of Technology</p>
+        </div>
+        <div class="user-info">
+            <span id="userName"></span>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Welcome, <span id="facultyName"></span>!</h2>
+            <p>View feedback received from students.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-comments" style="font-size: 30px;"></i>
+                <h4>Total Feedbacks</h4>
+                <div class="value" id="totalFeedback">0</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-star" style="font-size: 30px;"></i>
+                <h4>Average Rating</h4>
+                <div class="value" id="avgRating">0</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-smile" style="font-size: 30px;"></i>
+                <h4>Positive Feedback</h4>
+                <div class="value" id="positiveCount">0</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-list"></i> Feedback Received</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Student Name</th><th>Subject</th><th>Teaching</th><th>Punctuality</th><th>Doubt Clearing</th><th>Overall</th><th>Comments</th><th>Sentiment</th><th>Date</th>
+                    </thead>
+                    <tbody id="feedbackList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadUserData() {
+            const response = await fetch('/api/me', { credentials: 'include' });
+            if (!response.ok) {
+                window.location.href = '/login.html';
+                return;
+            }
+            const user = await response.json();
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('facultyName').textContent = user.full_name.split(' ')[0];
+            loadFeedback();
+        }
+
+        async function loadFeedback() {
+            const response = await fetch('/api/faculty/my-feedback', { credentials: 'include' });
+            const feedbacks = await response.json();
+            
+            const tbody = document.getElementById('feedbackList');
+            tbody.innerHTML = '';
+            
+            let total = 0, sum = 0, positive = 0;
+            
+            feedbacks.forEach(fb => {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = fb.student_name;
+                row.insertCell(1).textContent = fb.subject || 'N/A';
+                row.insertCell(2).textContent = fb.teaching_quality;
+                row.insertCell(3).textContent = fb.punctuality;
+                row.insertCell(4).textContent = fb.doubt_clearing;
+                row.insertCell(5).textContent = fb.overall_rating;
+                row.insertCell(6).textContent = fb.comments?.substring(0, 50) || '';
+                
+                const sentiment = fb.sentiment_label || 'Neutral';
+                row.insertCell(7).innerHTML = `<span class="sentiment-${sentiment.toLowerCase()}">${sentiment}</span>`;
+                row.insertCell(8).textContent = new Date(fb.submission_date).toLocaleDateString();
+                
+                total++;
+                sum += fb.overall_rating;
+                if (sentiment === 'Positive') positive++;
+            });
+            
+            document.getElementById('totalFeedback').textContent = total;
+            document.getElementById('avgRating').textContent = total > 0 ? (sum/total).toFixed(1) : 0;
+            document.getElementById('positiveCount').textContent = positive;
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = '/login.html';
+        }
+
+        loadUserData();
+    </script>
+</body>
+</html>

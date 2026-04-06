@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - SatisfyPulse</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="purple-bar"></div>
+    <div class="white-bar">
+        <div class="logo">
+            <h1>SatisfyPulse</h1>
+            <p>Bannari Amman Institute of Technology</p>
+        </div>
+        <div class="user-info">
+            <span id="userName"></span>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Welcome, <span id="studentName"></span>!</h2>
+            <p>Share your feedback and help us improve BIT.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-clipboard-list" style="font-size: 30px;"></i>
+                <h4>Total Feedback Given</h4>
+                <div class="value" id="totalFeedback">0</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-star" style="font-size: 30px;"></i>
+                <h4>Average Rating</h4>
+                <div class="value" id="avgRating">0</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-chart-line" style="font-size: 30px;"></i>
+                <h4>Satisfaction Level</h4>
+                <div class="value" id="satisfactionLevel">-</div>
+            </div>
+        </div>
+
+        <div class="categories-grid">
+            <div class="category-card" onclick="location.href='feedback.html?type=faculty'">
+                <i class="fas fa-chalkboard-user icon"></i>
+                <h4>Faculty Feedback</h4>
+                <p>Rate your instructors</p>
+            </div>
+            <div class="category-card" onclick="location.href='feedback.html?type=hostel'">
+                <i class="fas fa-building icon"></i>
+                <h4>Hostel Feedback</h4>
+                <p>Share hostel experience</p>
+            </div>
+            <div class="category-card" onclick="location.href='feedback.html?type=mess'">
+                <i class="fas fa-utensils icon"></i>
+                <h4>Mess Feedback</h4>
+                <p>Rate food quality</p>
+            </div>
+            <div class="category-card" onclick="location.href='feedback.html?type=infrastructure'">
+                <i class="fas fa-school icon"></i>
+                <h4>Infrastructure</h4>
+                <p>Facilities & amenities</p>
+            </div>
+            <div class="category-card" onclick="location.href='academic-feedback.html'">
+                <i class="fas fa-graduation-cap icon"></i>
+                <h4>Academic Feedback</h4>
+                <p>Course-wise with predictor</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-history"></i> Your Feedback History</h3>
+            <div class="table-container">
+                <table id="feedbackTable">
+                    <thead>
+                        <tr><th>Type</th><th>Details</th><th>Rating</th><th>Sentiment</th><th>Date</th>
+                    </thead>
+                    <tbody id="feedbackList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        async function loadUserData() {
+            const response = await fetch('/api/me', { credentials: 'include' });
+            if (!response.ok) {
+                window.location.href = '/login.html';
+                return;
+            }
+            currentUser = await response.json();
+            document.getElementById('userName').textContent = currentUser.full_name;
+            document.getElementById('studentName').textContent = currentUser.full_name.split(' ')[0];
+            
+            loadStats();
+            loadFeedbackHistory();
+        }
+
+        async function loadStats() {
+            const response = await fetch('/api/student/stats', { credentials: 'include' });
+            const stats = await response.json();
+            document.getElementById('totalFeedback').textContent = stats.total_feedback;
+            document.getElementById('avgRating').textContent = stats.average_rating;
+            
+            let level = 'Average';
+            if (stats.average_rating >= 4) level = 'Excellent';
+            else if (stats.average_rating >= 3) level = 'Good';
+            else if (stats.average_rating >= 2) level = 'Fair';
+            else if (stats.average_rating > 0) level = 'Needs Improvement';
+            document.getElementById('satisfactionLevel').textContent = level;
+        }
+
+        async function loadFeedbackHistory() {
+            const response = await fetch('/api/student/my-feedback', { credentials: 'include' });
+            const feedbacks = await response.json();
+            
+            const tbody = document.getElementById('feedbackList');
+            tbody.innerHTML = '';
+            
+            feedbacks.forEach(fb => {
+                const row = tbody.insertRow();
+                let typeIcon = '';
+                if (fb.type === 'faculty') typeIcon = '<i class="fas fa-chalkboard-user"></i>';
+                else if (fb.type === 'hostel') typeIcon = '<i class="fas fa-building"></i>';
+                else if (fb.type === 'mess') typeIcon = '<i class="fas fa-utensils"></i>';
+                else if (fb.type === 'academic') typeIcon = '<i class="fas fa-graduation-cap"></i>';
+                else typeIcon = '<i class="fas fa-school"></i>';
+                row.insertCell(0).innerHTML = `${typeIcon} ${fb.type.toUpperCase()}`;
+                
+                let details = '';
+                if (fb.type === 'faculty') details = fb.instructor_name;
+                else if (fb.type === 'hostel') details = fb.block_name;
+                else if (fb.type === 'mess') details = fb.mess_type;
+                else if (fb.type === 'academic') details = fb.course_name;
+                else details = fb.location;
+                row.insertCell(1).textContent = details;
+                
+                let rating = fb.overall_rating || fb.cleanliness || fb.food_quality || fb.overall_satisfaction;
+                row.insertCell(2).textContent = rating || 'N/A';
+                
+                const sentiment = fb.sentiment_label || fb.prediction_label || 'Neutral';
+                row.insertCell(3).innerHTML = `<span class="sentiment-${sentiment.toLowerCase()}">${sentiment}</span>`;
+                
+                row.insertCell(4).textContent = new Date(fb.submission_date).toLocaleDateString();
+            });
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = '/login.html';
+        }
+
+        loadUserData();
+    </script>
+</body>
+</html>

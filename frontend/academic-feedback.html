@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Feedback with Predictor - SatisfyPulse</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .filter-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f3ee;
+            border-radius: 15px;
+        }
+        .predictor-box {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            color: white;
+        }
+        .gauge-container {
+            position: relative;
+            width: 280px;
+            height: 140px;
+            margin: 0 auto;
+        }
+        canvas#gaugeChart {
+            width: 100%;
+            height: 100%;
+        }
+        .prediction-badge {
+            display: inline-block;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-top: 15px;
+            font-size: 18px;
+        }
+        .satisfaction-meter {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .satisfaction-fill {
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .trend-chart {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .course-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .rating-group {
+            margin: 20px 0;
+        }
+        .rating-stars {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .star {
+            font-size: 30px;
+            cursor: pointer;
+            color: #ddd;
+            transition: color 0.3s;
+        }
+        .star.active {
+            color: #FFD700;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card-small {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-card-small .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .speed-value {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        .course-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .course-item {
+            background: #f8f3ee;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .course-item:hover {
+            border-color: #48246E;
+            background: white;
+        }
+        .course-item.selected {
+            border-color: #48246E;
+            background: #e8d9f0;
+        }
+        .course-code {
+            font-weight: bold;
+            color: #48246E;
+        }
+        .course-name {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="purple-bar"></div>
+    <div class="white-bar">
+        <div class="logo">
+            <h1>SatisfyPulse</h1>
+            <p>Bannari Amman Institute of Technology</p>
+        </div>
+        <div class="user-info">
+            <span id="userName"></span>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="predictor-box">
+            <h2 style="text-align: center;"><i class="fas fa-chart-line"></i> Real-Time Satisfaction Predictor</h2>
+            <p style="text-align: center;">Rate your course to see instant satisfaction prediction</p>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; align-items: center;">
+                <div style="flex: 1; min-width: 280px;">
+                    <div class="gauge-container">
+                        <canvas id="gaugeChart" width="280" height="140"></canvas>
+                    </div>
+                    <div class="speed-value" id="percentageValue">0%</div>
+                </div>
+                
+                <div style="flex: 1; min-width: 200px;">
+                    <div class="stats-row">
+                        <div class="stat-card-small">
+                            <div class="value" id="avgRating">0</div>
+                            <div class="label">Average Rating</div>
+                        </div>
+                        <div class="stat-card-small">
+                            <div class="value" id="totalRatings">0</div>
+                            <div class="label">Ratings Given</div>
+                        </div>
+                        <div class="stat-card-small">
+                            <div class="value" id="maxRating">5</div>
+                            <div class="label">Max Rating</div>
+                        </div>
+                    </div>
+                    
+                    <div class="satisfaction-meter">
+                        <div class="satisfaction-fill" id="satisfactionFill">0%</div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <div class="prediction-badge" id="predictionBadge" style="background: #4ecdc4;">Start rating to see prediction</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="trend-chart">
+            <h3><i class="fas fa-chart-line"></i> Satisfaction Trend Over Time</h3>
+            <canvas id="trendChart" height="100"></canvas>
+        </div>
+        
+        <div class="form-container">
+            <h3><i class="fas fa-graduation-cap"></i> Academic Feedback Form</h3>
+            <div id="alert" style="display: none;"></div>
+            
+            <form id="academicForm">
+                <div class="filter-group">
+                    <div class="form-group">
+                        <label><i class="fas fa-building"></i> Department</label>
+                        <select id="department" required onchange="loadYears()">
+                            <option value="">Select Department</option>
+                            <option value="CSE">Computer Science and Engineering (CSE)</option>
+                            <option value="IT">Information Technology (IT)</option>
+                            <option value="AIDS">Artificial Intelligence and Data Science (AIDS)</option>
+                            <option value="AIML">Artificial Intelligence and Machine Learning (AIML)</option>
+                            <option value="ECE">Electronics and Communication Engineering (ECE)</option>
+                            <option value="MECH">Mechanical Engineering (MECH)</option>
+                            <option value="EEE">Electrical and Electronics Engineering (EEE)</option>
+                            <option value="CIVIL">Civil Engineering (CIVIL)</option>
+                            <option value="BIOTECH">Biotechnology</option>
+                            <option value="AGRI">Agricultural Engineering</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar"></i> Year of Study</label>
+                        <select id="year" required onchange="loadSemesters()">
+                            <option value="">Select Year</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-layer-group"></i> Semester</label>
+                        <select id="semester" required onchange="loadCourses()">
+                            <option value="">Select Semester</option>
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                            <option value="3">Semester 3</option>
+                            <option value="4">Semester 4</option>
+                            <option value="5">Semester 5</option>
+                            <option value="6">Semester 6</option>
+                            <option value="7">Semester 7</option>
+                            <option value="8">Semester 8</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-clock"></i> Period</label>
+                        <select id="period" required>
+                            <option value="">Select Period</option>
+                            <option value="PT1">PT1 (Phase Test 1)</option>
+                            <option value="PT2">PT2 (Phase Test 2)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-book"></i> Select Course</label>
+                    <div id="courseList" class="course-list">
+                        <!-- Courses will be loaded here -->
+                    </div>
+                    <input type="hidden" id="selectedCourse" value="">
+                    <input type="hidden" id="selectedCourseName" value="">
+                    <input type="hidden" id="selectedFaculty" value="">
+                </div>
+                
+                <div id="courseInfo" class="course-info" style="display: none;">
+                    <i class="fas fa-info-circle"></i> <span id="courseDetails"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-user-tie"></i> Faculty Name</label>
+                    <input type="text" id="facultyName" readonly>
+                </div>
+                
+                <div class="rating-group">
+                    <label>Teaching Clarity & Communication</label>
+                    <div class="rating-stars" data-rating="clarity">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <input type="hidden" id="clarity" value="0">
+                </div>
+                
+                <div class="rating-group">
+                    <label>Course Materials & Resources</label>
+                    <div class="rating-stars" data-rating="materials">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <input type="hidden" id="materials" value="0">
+                </div>
+                
+                <div class="rating-group">
+                    <label>Time Management & Pacing</label>
+                    <div class="rating-stars" data-rating="time_management">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <input type="hidden" id="time_management" value="0">
+                </div>
+                
+                <div class="rating-group">
+                    <label>Syllabus Coverage</label>
+                    <div class="rating-stars" data-rating="syllabus_coverage">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <input type="hidden" id="syllabus_coverage" value="0">
+                </div>
+                
+                <div class="rating-group">
+                    <label>Overall Satisfaction</label>
+                    <div class="rating-stars" data-rating="overall_satisfaction">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <input type="hidden" id="overall_satisfaction" value="0">
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-comment"></i> Additional Comments</label>
+                    <textarea id="comments" rows="4" placeholder="Share your feedback about the course..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn">Submit Academic Feedback</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let gaugeChart = null;
+        let trendChart = null;
+        let satisfactionHistory = [0, 0, 0, 0, 0];
+        
+        let currentRatings = {
+            clarity: 0,
+            materials: 0,
+            time_management: 0,
+            syllabus_coverage: 0,
+            overall_satisfaction: 0
+        };
+
+        // Complete course database - 6 courses per semester for ALL departments
+        const courseDatabase = {
+            // ==================== COMPUTER SCIENCE AND ENGINEERING ====================
+            "CSE": {
+                1: [ // Semester 1
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "CS101", name: "Programming in C", faculty: "Dr Sasikala D" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "EE101", name: "Basic Electrical Engineering", faculty: "Dr Maheswari K T" },
+                    { code: "EN101", name: "English for Engineers", faculty: "Dr Ajai A" }
+                ],
+                2: [ // Semester 2
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "CS102", name: "Object Oriented Programming", faculty: "Dr Premalatha K" },
+                    { code: "CS103", name: "Data Structures", faculty: "Dr Sathishkumar P" },
+                    { code: "CS104", name: "Digital Logic Design", faculty: "Dr Karthiga M" },
+                    { code: "ME101", name: "Engineering Graphics", faculty: "Dr Ravi Kumar M" },
+                    { code: "ES101", name: "Environmental Science", faculty: "Dr Praveena R" }
+                ],
+                3: [ // Semester 3
+                    { code: "MA203", name: "Discrete Mathematics", faculty: "Dr Parimala M" },
+                    { code: "CS205", name: "Data Structures & Algorithms", faculty: "Dr Premalatha K" },
+                    { code: "CS206", name: "Computer Organization", faculty: "Dr Rajeshkumar G" },
+                    { code: "CS207", name: "Software Engineering", faculty: "Dr Karthiga M" },
+                    { code: "CS208", name: "Database Management Systems", faculty: "Dr Sathishkumar P" },
+                    { code: "CS209", name: "Operating Systems", faculty: "Dr Sangeethaa S N" }
+                ],
+                4: [ // Semester 4
+                    { code: "CS210", name: "Computer Networks", faculty: "Dr Saranya K" },
+                    { code: "CS211", name: "Microprocessors", faculty: "Dr Karthiga M" },
+                    { code: "CS212", name: "Theory of Computation", faculty: "Dr Sasikala D" },
+                    { code: "MA204", name: "Probability & Statistics", faculty: "Dr Parimala M" },
+                    { code: "CS213", name: "Web Technologies", faculty: "Dr Rajeshkumar G" },
+                    { code: "CS214", name: "Design & Analysis of Algorithms", faculty: "Dr Premalatha K" }
+                ],
+                5: [ // Semester 5
+                    { code: "CS301", name: "Machine Learning", faculty: "Dr Sangeethaa S N" },
+                    { code: "CS302", name: "Artificial Intelligence", faculty: "Dr Saranya K" },
+                    { code: "CS303", name: "Compiler Design", faculty: "Dr Sathishkumar P" },
+                    { code: "CS304", name: "Cloud Computing", faculty: "Dr Karthiga M" },
+                    { code: "CS305", name: "Big Data Analytics", faculty: "Dr Sangeethaa S N" },
+                    { code: "CS306", name: "Cyber Security", faculty: "Dr Sasikala D" }
+                ],
+                6: [ // Semester 6
+                    { code: "CS307", name: "Deep Learning", faculty: "Dr Sangeethaa S N" },
+                    { code: "CS308", name: "Natural Language Processing", faculty: "Dr Saranya K" },
+                    { code: "CS309", name: "Computer Vision", faculty: "Dr Sasikala D" },
+                    { code: "CS310", name: "Blockchain Technology", faculty: "Dr Karthiga M" },
+                    { code: "CS311", name: "Internet of Things", faculty: "Dr Rajeshkumar G" },
+                    { code: "CS312", name: "Mobile Application Development", faculty: "Dr Premalatha K" }
+                ],
+                7: [ // Semester 7
+                    { code: "CS401", name: "Full Stack Development", faculty: "Dr Rajeshkumar G" },
+                    { code: "CS402", name: "DevOps", faculty: "Dr Sathishkumar P" },
+                    { code: "CS403", name: "Data Science", faculty: "Dr Sangeethaa S N" },
+                    { code: "CS404", name: "Reinforcement Learning", faculty: "Dr Saranya K" },
+                    { code: "CS405", name: "Quantum Computing", faculty: "Dr Sasikala D" },
+                    { code: "CS406", name: "Edge Computing", faculty: "Dr Karthiga M" }
+                ],
+                8: [ // Semester 8
+                    { code: "CS407", name: "Project Management", faculty: "Dr Premalatha K" },
+                    { code: "CS408", name: "Software Testing", faculty: "Dr Sathishkumar P" },
+                    { code: "CS409", name: "Human Computer Interaction", faculty: "Dr Saranya K" },
+                    { code: "CS410", name: "Robotics", faculty: "Dr Rajeshkumar G" },
+                    { code: "CS411", name: "Augmented Reality", faculty: "Dr Sasikala D" },
+                    { code: "CS412", name: "Major Project", faculty: "Dr Premalatha K" }
+                ]
+            },
+
+            // ==================== INFORMATION TECHNOLOGY ====================
+            "IT": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "IT101", name: "Programming in C", faculty: "Dr Naveena S" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "EE101", name: "Basic Electrical Engineering", faculty: "Dr Maheswari K T" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "IT102", name: "Object Oriented Programming", faculty: "Dr Palanisamy C" },
+                    { code: "IT103", name: "Data Structures", faculty: "Dr Sadhasivam N" },
+                    { code: "IT104", name: "Digital Logic Design", faculty: "Dr Paarivallal Ra." },
+                    { code: "IT105", name: "Web Design", faculty: "Dr Naveena S" },
+                    { code: "ES101", name: "Environmental Science", faculty: "Dr Praveena R" }
+                ],
+                3: [
+                    { code: "MA203", name: "Discrete Mathematics", faculty: "Dr Parimala M" },
+                    { code: "IT201", name: "Database Management Systems", faculty: "Dr Naveena S" },
+                    { code: "IT202", name: "Operating Systems", faculty: "Dr Palanisamy C" },
+                    { code: "IT203", name: "Computer Networks", faculty: "Dr Sadhasivam N" },
+                    { code: "IT204", name: "Software Engineering", faculty: "Dr Naveena S" },
+                    { code: "IT205", name: "Web Technologies", faculty: "Dr Palanisamy C" }
+                ],
+                4: [
+                    { code: "IT206", name: "Cloud Computing", faculty: "Dr Sadhasivam N" },
+                    { code: "IT207", name: "Machine Learning", faculty: "Dr Naveena S" },
+                    { code: "IT208", name: "Artificial Intelligence", faculty: "Dr Palanisamy C" },
+                    { code: "IT209", name: "Big Data Analytics", faculty: "Dr Sadhasivam N" },
+                    { code: "IT210", name: "Cyber Security", faculty: "Dr Naveena S" },
+                    { code: "IT211", name: "Mobile Computing", faculty: "Dr Palanisamy C" }
+                ],
+                5: [
+                    { code: "IT301", name: "Deep Learning", faculty: "Dr Naveena S" },
+                    { code: "IT302", name: "Natural Language Processing", faculty: "Dr Palanisamy C" },
+                    { code: "IT303", name: "Computer Vision", faculty: "Dr Sadhasivam N" },
+                    { code: "IT304", name: "Blockchain", faculty: "Dr Naveena S" },
+                    { code: "IT305", name: "IoT", faculty: "Dr Palanisamy C" },
+                    { code: "IT306", name: "DevOps", faculty: "Dr Sadhasivam N" }
+                ],
+                6: [
+                    { code: "IT307", name: "Full Stack Development", faculty: "Dr Naveena S" },
+                    { code: "IT308", name: "Data Science", faculty: "Dr Palanisamy C" },
+                    { code: "IT309", name: "Reinforcement Learning", faculty: "Dr Sadhasivam N" },
+                    { code: "IT310", name: "Quantum Computing", faculty: "Dr Naveena S" },
+                    { code: "IT311", name: "Edge Computing", faculty: "Dr Palanisamy C" },
+                    { code: "IT312", name: "Mini Project", faculty: "Dr Sadhasivam N" }
+                ],
+                7: [
+                    { code: "IT401", name: "Cyber Forensics", faculty: "Dr Naveena S" },
+                    { code: "IT402", name: "Cloud Security", faculty: "Dr Palanisamy C" },
+                    { code: "IT403", name: "AI Ethics", faculty: "Dr Sadhasivam N" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Naveena S" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Palanisamy C" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Sadhasivam N" }
+                ],
+                8: [
+                    { code: "IT404", name: "Research Methodology", faculty: "Dr Naveena S" },
+                    { code: "IT405", name: "Entrepreneurship", faculty: "Dr Palanisamy C" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Sadhasivam N" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Naveena S" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Palanisamy C" },
+                    { code: "IT406", name: "Industry 4.0", faculty: "Dr Sadhasivam N" }
+                ]
+            },
+
+            // ==================== ARTIFICIAL INTELLIGENCE AND DATA SCIENCE ====================
+            "AIDS": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "AIDS101", name: "Python Programming", faculty: "Dr Gomathi R" },
+                    { code: "AIDS102", name: "Statistics for Data Science", faculty: "Dr Sundara Murthy S" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "AIDS103", name: "Data Structures", faculty: "Dr Gomathi R" },
+                    { code: "AIDS104", name: "Data Visualization", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS105", name: "Linear Algebra", faculty: "Dr Eswaramoorthy V" },
+                    { code: "AIDS106", name: "Database Management", faculty: "Dr Gomathi R" },
+                    { code: "AIDS107", name: "Probability", faculty: "Dr Sundara Murthy S" }
+                ],
+                3: [
+                    { code: "AIDS201", name: "Machine Learning", faculty: "Dr Gomathi R" },
+                    { code: "AIDS202", name: "Deep Learning", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS203", name: "Natural Language Processing", faculty: "Dr Eswaramoorthy V" },
+                    { code: "AIDS204", name: "Computer Vision", faculty: "Dr Gomathi R" },
+                    { code: "AIDS205", name: "Big Data Analytics", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS206", name: "Cloud Computing", faculty: "Dr Eswaramoorthy V" }
+                ],
+                4: [
+                    { code: "AIDS207", name: "Reinforcement Learning", faculty: "Dr Gomathi R" },
+                    { code: "AIDS208", name: "Time Series Analysis", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS209", name: "Generative AI", faculty: "Dr Eswaramoorthy V" },
+                    { code: "AIDS210", name: "MLOps", faculty: "Dr Gomathi R" },
+                    { code: "AIDS211", name: "Data Engineering", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS212", name: "AI Ethics", faculty: "Dr Eswaramoorthy V" }
+                ],
+                5: [
+                    { code: "AIDS301", name: "Advanced Machine Learning", faculty: "Dr Gomathi R" },
+                    { code: "AIDS302", name: "Graph Neural Networks", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS303", name: "Explainable AI", faculty: "Dr Eswaramoorthy V" },
+                    { code: "AIDS304", name: "Federated Learning", faculty: "Dr Gomathi R" },
+                    { code: "AIDS305", name: "Bayesian Learning", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS306", name: "Optimization Techniques", faculty: "Dr Eswaramoorthy V" }
+                ],
+                6: [
+                    { code: "AIDS307", name: "Speech Processing", faculty: "Dr Gomathi R" },
+                    { code: "AIDS308", name: "Recommender Systems", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS309", name: "Anomaly Detection", faculty: "Dr Eswaramoorthy V" },
+                    { code: "AIDS310", name: "Social Network Analysis", faculty: "Dr Gomathi R" },
+                    { code: "AIDS311", name: "Mini Project", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS312", name: "Research Methods", faculty: "Dr Eswaramoorthy V" }
+                ],
+                7: [
+                    { code: "AIDS401", name: "AI for Healthcare", faculty: "Dr Gomathi R" },
+                    { code: "AIDS402", name: "AI for Finance", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS403", name: "AI for Robotics", faculty: "Dr Eswaramoorthy V" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Gomathi R" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Sundara Murthy S" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Eswaramoorthy V" }
+                ],
+                8: [
+                    { code: "AIDS404", name: "AI for Cybersecurity", faculty: "Dr Gomathi R" },
+                    { code: "AIDS405", name: "AI for IoT", faculty: "Dr Sundara Murthy S" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Eswaramoorthy V" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Gomathi R" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Sundara Murthy S" },
+                    { code: "AIDS406", name: "Industry Readiness", faculty: "Dr Eswaramoorthy V" }
+                ]
+            },
+
+            // ==================== ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING ====================
+            "AIML": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "AIML101", name: "Python Programming", faculty: "Dr Bharathi A" },
+                    { code: "AIML102", name: "Linear Algebra", faculty: "Dr Gopalakrishnan B" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "AIML103", name: "Data Structures", faculty: "Dr Bharathi A" },
+                    { code: "AIML104", name: "Probability", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML105", name: "Database Systems", faculty: "Dr Bharathi A" },
+                    { code: "AIML106", name: "Statistics", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML107", name: "Discrete Mathematics", faculty: "Dr Parimala M" }
+                ],
+                3: [
+                    { code: "AIML201", name: "Machine Learning", faculty: "Dr Bharathi A" },
+                    { code: "AIML202", name: "Deep Learning", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML203", name: "Computer Vision", faculty: "Dr Bharathi A" },
+                    { code: "AIML204", name: "NLP", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML205", name: "Big Data", faculty: "Dr Bharathi A" },
+                    { code: "AIML206", name: "Cloud AI", faculty: "Dr Gopalakrishnan B" }
+                ],
+                4: [
+                    { code: "AIML207", name: "Reinforcement Learning", faculty: "Dr Bharathi A" },
+                    { code: "AIML208", name: "Generative AI", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML209", name: "ML Engineering", faculty: "Dr Bharathi A" },
+                    { code: "AIML210", name: "Time Series", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML211", name: "AI for Robotics", faculty: "Dr Bharathi A" },
+                    { code: "AIML212", name: "Edge AI", faculty: "Dr Gopalakrishnan B" }
+                ],
+                5: [
+                    { code: "AIML301", name: "Graph Neural Networks", faculty: "Dr Bharathi A" },
+                    { code: "AIML302", name: "Federated Learning", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML303", name: "Explainable AI", faculty: "Dr Bharathi A" },
+                    { code: "AIML304", name: "Bayesian Learning", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML305", name: "Optimization", faculty: "Dr Bharathi A" },
+                    { code: "AIML306", name: "AI Ethics", faculty: "Dr Gopalakrishnan B" }
+                ],
+                6: [
+                    { code: "AIML307", name: "Speech Processing", faculty: "Dr Bharathi A" },
+                    { code: "AIML308", name: "Recommender Systems", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML309", name: "Anomaly Detection", faculty: "Dr Bharathi A" },
+                    { code: "AIML310", name: "Social Network Analysis", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML311", name: "Mini Project", faculty: "Dr Bharathi A" },
+                    { code: "AIML312", name: "Research Methods", faculty: "Dr Gopalakrishnan B" }
+                ],
+                7: [
+                    { code: "AIML401", name: "AI for Healthcare", faculty: "Dr Bharathi A" },
+                    { code: "AIML402", name: "AI for Finance", faculty: "Dr Gopalakrishnan B" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Bharathi A" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Gopalakrishnan B" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Bharathi A" },
+                    { code: "AIML403", name: "AI for Cybersecurity", faculty: "Dr Gopalakrishnan B" }
+                ],
+                8: [
+                    { code: "AIML404", name: "AI for IoT", faculty: "Dr Bharathi A" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Gopalakrishnan B" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Bharathi A" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Gopalakrishnan B" },
+                    { code: "AIML405", name: "Industry 4.0", faculty: "Dr Bharathi A" },
+                    { code: "AIML406", name: "Research Project", faculty: "Dr Gopalakrishnan B" }
+                ]
+            },
+
+            // ==================== ELECTRONICS AND COMMUNICATION ENGINEERING ====================
+            "ECE": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "ECE101", name: "Basic Electronics", faculty: "Dr Prakash S P" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "CS101", name: "Programming in C", faculty: "Dr Sasikala D" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "ECE102", name: "Electronic Circuits", faculty: "Dr Prakash S P" },
+                    { code: "ECE103", name: "Signals & Systems", faculty: "Dr Harikumar R" },
+                    { code: "ECE104", name: "Digital Electronics", faculty: "Dr Poongodi C" },
+                    { code: "EE101", name: "Basic Electrical Engineering", faculty: "Dr Maheswari K T" },
+                    { code: "ME101", name: "Engineering Graphics", faculty: "Dr Ravi Kumar M" }
+                ],
+                3: [
+                    { code: "ECE205", name: "Analog Circuits", faculty: "Dr Prakash S P" },
+                    { code: "ECE206", name: "Microprocessors", faculty: "Dr Harikumar R" },
+                    { code: "ECE207", name: "Communication Engineering", faculty: "Dr Poongodi C" },
+                    { code: "MA203", name: "Discrete Mathematics", faculty: "Dr Parimala M" },
+                    { code: "ECE208", name: "Digital Signal Processing", faculty: "Dr Prakash S P" },
+                    { code: "ECE209", name: "Control Systems", faculty: "Dr Harikumar R" }
+                ],
+                4: [
+                    { code: "ECE210", name: "Embedded Systems", faculty: "Dr Poongodi C" },
+                    { code: "ECE211", name: "VLSI Design", faculty: "Dr Prakash S P" },
+                    { code: "ECE212", name: "Wireless Communication", faculty: "Dr Harikumar R" },
+                    { code: "ECE213", name: "Antenna Theory", faculty: "Dr Poongodi C" },
+                    { code: "ECE214", name: "Optical Communication", faculty: "Dr Prakash S P" },
+                    { code: "ECE215", name: "RF Engineering", faculty: "Dr Harikumar R" }
+                ],
+                5: [
+                    { code: "ECE301", name: "IoT", faculty: "Dr Prakash S P" },
+                    { code: "ECE302", name: "5G Communication", faculty: "Dr Harikumar R" },
+                    { code: "ECE303", name: "Satellite Communication", faculty: "Dr Poongodi C" },
+                    { code: "ECE304", name: "Radar Systems", faculty: "Dr Prakash S P" },
+                    { code: "ECE305", name: "Microwave Engineering", faculty: "Dr Harikumar R" },
+                    { code: "ECE306", name: "Medical Electronics", faculty: "Dr Poongodi C" }
+                ],
+                6: [
+                    { code: "ECE307", name: "Nano Electronics", faculty: "Dr Prakash S P" },
+                    { code: "ECE308", name: "Sensors Technology", faculty: "Dr Harikumar R" },
+                    { code: "ECE309", name: "Image Processing", faculty: "Dr Poongodi C" },
+                    { code: "ECE310", name: "Speech Processing", faculty: "Dr Prakash S P" },
+                    { code: "ECE311", name: "Mini Project", faculty: "Dr Harikumar R" },
+                    { code: "ECE312", name: "PCB Design", faculty: "Dr Poongodi C" }
+                ],
+                7: [
+                    { code: "ECE401", name: "Advanced Communication", faculty: "Dr Prakash S P" },
+                    { code: "ECE402", name: "Cognitive Radio", faculty: "Dr Harikumar R" },
+                    { code: "ECE403", name: "MIMO Systems", faculty: "Dr Poongodi C" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Prakash S P" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Harikumar R" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Poongodi C" }
+                ],
+                8: [
+                    { code: "ECE404", name: "Wireless Sensor Networks", faculty: "Dr Prakash S P" },
+                    { code: "ECE405", name: "Software Defined Radio", faculty: "Dr Harikumar R" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Poongodi C" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Prakash S P" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Harikumar R" },
+                    { code: "ECE406", name: "Industry Readiness", faculty: "Dr Poongodi C" }
+                ]
+            },
+
+            // ==================== MECHANICAL ENGINEERING ====================
+            "MECH": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "ME101", name: "Engineering Mechanics", faculty: "Dr Ravi Kumar M" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "CS101", name: "Programming in C", faculty: "Dr Sasikala D" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "ME102", name: "Thermodynamics", faculty: "Dr Ravi Kumar M" },
+                    { code: "ME103", name: "Manufacturing Technology", faculty: "Dr Sivakumar K" },
+                    { code: "ME104", name: "Strength of Materials", faculty: "Dr Muthukumar K" },
+                    { code: "EE101", name: "Basic Electrical Engineering", faculty: "Dr Maheswari K T" },
+                    { code: "ME105", name: "Workshop Practice", faculty: "Dr Senthilkumar G" }
+                ],
+                3: [
+                    { code: "ME201", name: "Fluid Mechanics", faculty: "Dr Ravi Kumar M" },
+                    { code: "ME202", name: "Kinematics of Machines", faculty: "Dr Sivakumar K" },
+                    { code: "ME203", name: "Materials Science", faculty: "Dr Muthukumar K" },
+                    { code: "ME204", name: "Metallurgy", faculty: "Dr Senthilkumar G" },
+                    { code: "MA203", name: "Discrete Mathematics", faculty: "Dr Parimala M" },
+                    { code: "ME205", name: "CAD", faculty: "Dr Ravi Kumar M" }
+                ],
+                4: [
+                    { code: "ME206", name: "Heat Transfer", faculty: "Dr Sivakumar K" },
+                    { code: "ME207", name: "Design of Machine Elements", faculty: "Dr Muthukumar K" },
+                    { code: "ME208", name: "Dynamics of Machines", faculty: "Dr Senthilkumar G" },
+                    { code: "ME209", name: "Turbo Machinery", faculty: "Dr Ravi Kumar M" },
+                    { code: "ME210", name: "Measurement & Metrology", faculty: "Dr Sivakumar K" },
+                    { code: "ME211", name: "CAM", faculty: "Dr Muthukumar K" }
+                ],
+                5: [
+                    { code: "ME301", name: "CAD/CAM", faculty: "Dr Ravi Kumar M" },
+                    { code: "ME302", name: "Automobile Engineering", faculty: "Dr Sivakumar K" },
+                    { code: "ME303", name: "Industrial Engineering", faculty: "Dr Muthukumar K" },
+                    { code: "ME304", name: "Robotics", faculty: "Dr Senthilkumar G" },
+                    { code: "ME305", name: "Mechatronics", faculty: "Dr Ravi Kumar M" },
+                    { code: "ME306", name: "Composite Materials", faculty: "Dr Sivakumar K" }
+                ],
+                6: [
+                    { code: "ME307", name: "Finite Element Analysis", faculty: "Dr Muthukumar K" },
+                    { code: "ME308", name: "Refrigeration & AC", faculty: "Dr Senthilkumar G" },
+                    { code: "ME309", name: "Power Plant Engineering", faculty: "Dr Ravi Kumar M" },
+                    { code: "ME310", name: "Renewable Energy", faculty: "Dr Sivakumar K" },
+                    { code: "ME311", name: "Mini Project", faculty: "Dr Muthukumar K" },
+                    { code: "ME312", name: "Computational Fluid Dynamics", faculty: "Dr Senthilkumar G" }
+                ],
+                7: [
+                    { code: "ME401", name: "Advanced Manufacturing", faculty: "Dr Ravi Kumar M" },
+                    { code: "ME402", name: "Total Quality Management", faculty: "Dr Sivakumar K" },
+                    { code: "ME403", name: "Supply Chain Management", faculty: "Dr Muthukumar K" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Senthilkumar G" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Ravi Kumar M" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Sivakumar K" }
+                ],
+                8: [
+                    { code: "ME404", name: "Nanotechnology", faculty: "Dr Muthukumar K" },
+                    { code: "ME405", name: "Additive Manufacturing", faculty: "Dr Senthilkumar G" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Ravi Kumar M" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Sivakumar K" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Muthukumar K" },
+                    { code: "ME406", name: "Industry 4.0", faculty: "Dr Senthilkumar G" }
+                ]
+            },
+
+            // ==================== ELECTRICAL AND ELECTRONICS ENGINEERING ====================
+            "EEE": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "EEE101", name: "Basic Electrical Engineering", faculty: "Dr Maheswari K T" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "CS101", name: "Programming in C", faculty: "Dr Sasikala D" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "EEE102", name: "Circuit Theory", faculty: "Dr Maheswari K T" },
+                    { code: "EEE103", name: "Electrical Machines I", faculty: "Dr Bharani Kumar R" },
+                    { code: "EEE104", name: "Digital Electronics", faculty: "Dr Sivaraman P" },
+                    { code: "ME101", name: "Engineering Graphics", faculty: "Dr Ravi Kumar M" },
+                    { code: "ES101", name: "Environmental Science", faculty: "Dr Praveena R" }
+                ],
+                3: [
+                    { code: "EEE201", name: "Electrical Machines II", faculty: "Dr Maheswari K T" },
+                    { code: "EEE202", name: "Power Systems", faculty: "Dr Bharani Kumar R" },
+                    { code: "EEE203", name: "Control Systems", faculty: "Dr Sivaraman P" },
+                    { code: "EEE204", name: "Measurements", faculty: "Dr Maheswari K T" },
+                    { code: "EEE205", name: "Microcontrollers", faculty: "Dr Bharani Kumar R" },
+                    { code: "MA203", name: "Discrete Mathematics", faculty: "Dr Parimala M" }
+                ],
+                4: [
+                    { code: "EEE206", name: "Power Electronics", faculty: "Dr Sivaraman P" },
+                    { code: "EEE207", name: "High Voltage Engineering", faculty: "Dr Maheswari K T" },
+                    { code: "EEE208", name: "Protection Systems", faculty: "Dr Bharani Kumar R" },
+                    { code: "EEE209", name: "Switchgear", faculty: "Dr Sivaraman P" },
+                    { code: "EEE210", name: "Electric Drives", faculty: "Dr Maheswari K T" },
+                    { code: "EEE211", name: "Renewable Energy", faculty: "Dr Bharani Kumar R" }
+                ],
+                5: [
+                    { code: "EEE301", name: "Smart Grid", faculty: "Dr Sivaraman P" },
+                    { code: "EEE302", name: "HVDC Transmission", faculty: "Dr Maheswari K T" },
+                    { code: "EEE303", name: "Electric Vehicles", faculty: "Dr Bharani Kumar R" },
+                    { code: "EEE304", name: "Power Quality", faculty: "Dr Sivaraman P" },
+                    { code: "EEE305", name: "Energy Management", faculty: "Dr Maheswari K T" },
+                    { code: "EEE306", name: "FACTS Devices", faculty: "Dr Bharani Kumar R" }
+                ],
+                6: [
+                    { code: "EEE307", name: "SCADA Systems", faculty: "Dr Sivaraman P" },
+                    { code: "EEE308", name: "Distribution Automation", faculty: "Dr Maheswari K T" },
+                    { code: "EEE309", name: "Restructured Power Systems", faculty: "Dr Bharani Kumar R" },
+                    { code: "EEE310", name: "Mini Project", faculty: "Dr Sivaraman P" },
+                    { code: "EEE311", name: "Electrical Safety", faculty: "Dr Maheswari K T" },
+                    { code: "EEE312", name: "PLC Programming", faculty: "Dr Bharani Kumar R" }
+                ],
+                7: [
+                    { code: "EEE401", name: "Advanced Power Systems", faculty: "Dr Sivaraman P" },
+                    { code: "EEE402", name: "Flexible AC Transmission", faculty: "Dr Maheswari K T" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Bharani Kumar R" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Sivaraman P" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Maheswari K T" },
+                    { code: "EEE403", name: "Energy Auditing", faculty: "Dr Bharani Kumar R" }
+                ],
+                8: [
+                    { code: "EEE404", name: "Distributed Generation", faculty: "Dr Sivaraman P" },
+                    { code: "EEE405", name: "Microgrids", faculty: "Dr Maheswari K T" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Bharani Kumar R" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Sivaraman P" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Maheswari K T" },
+                    { code: "EEE406", name: "Power System Economics", faculty: "Dr Bharani Kumar R" }
+                ]
+            },
+
+            // ==================== CIVIL ENGINEERING ====================
+            "CIVIL": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "CV101", name: "Engineering Mechanics", faculty: "Dr Mohanraj A" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "CS101", name: "Programming in C", faculty: "Dr Sasikala D" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "CV102", name: "Building Materials", faculty: "Dr Mohanraj A" },
+                    { code: "CV103", name: "Surveying", faculty: "Dr Karthiga Shenbagam N" },
+                    { code: "CV104", name: "Strength of Materials", faculty: "Dr Geethamani R" },
+                    { code: "ME101", name: "Engineering Graphics", faculty: "Dr Ravi Kumar M" },
+                    { code: "ES101", name: "Environmental Science", faculty: "Dr Praveena R" }
+                ],
+                3: [
+                    { code: "CV201", name: "Fluid Mechanics", faculty: "Dr Mohanraj A" },
+                    { code: "CV202", name: "Concrete Technology", faculty: "Dr Karthiga Shenbagam N" },
+                    { code: "CV203", name: "Geotechnical Engineering", faculty: "Dr Geethamani R" },
+                    { code: "CV204", name: "Structural Analysis", faculty: "Dr Mohanraj A" },
+                    { code: "CV205", name: "Transportation Engineering", faculty: "Dr Karthiga Shenbagam N" },
+                    { code: "MA203", name: "Discrete Mathematics", faculty: "Dr Parimala M" }
+                ],
+                4: [
+                    { code: "CV206", name: "Design of Steel Structures", faculty: "Dr Geethamani R" },
+                    { code: "CV207", name: "Design of RC Structures", faculty: "Dr Mohanraj A" },
+                    { code: "CV208", name: "Hydrology", faculty: "Dr Karthiga Shenbagam N" },
+                    { code: "CV209", name: "Water Supply Engineering", faculty: "Dr Geethamani R" },
+                    { code: "CV210", name: "Wastewater Engineering", faculty: "Dr Mohanraj A" },
+                    { code: "CV211", name: "Environmental Engineering", faculty: "Dr Karthiga Shenbagam N" }
+                ],
+                5: [
+                    { code: "CV301", name: "Foundation Engineering", faculty: "Dr Geethamani R" },
+                    { code: "CV302", name: "Construction Management", faculty: "Dr Mohanraj A" },
+                    { code: "CV303", name: "Remote Sensing", faculty: "Dr Karthiga Shenbagam N" },
+                    { code: "CV304", name: "GIS", faculty: "Dr Geethamani R" },
+                    { code: "CV305", name: "Traffic Engineering", faculty: "Dr Mohanraj A" },
+                    { code: "CV306", name: "Highway Engineering", faculty: "Dr Karthiga Shenbagam N" }
+                ],
+                6: [
+                    { code: "CV307", name: "Earthquake Engineering", faculty: "Dr Geethamani R" },
+                    { code: "CV308", name: "Prefabricated Structures", faculty: "Dr Mohanraj A" },
+                    { code: "CV309", name: "Ground Improvement", faculty: "Dr Karthiga Shenbagam N" },
+                    { code: "CV310", name: "Mini Project", faculty: "Dr Geethamani R" },
+                    { code: "CV311", name: "Quantity Surveying", faculty: "Dr Mohanraj A" },
+                    { code: "CV312", name: "Building Services", faculty: "Dr Karthiga Shenbagam N" }
+                ],
+                7: [
+                    { code: "CV401", name: "Advanced Structural Design", faculty: "Dr Geethamani R" },
+                    { code: "CV402", name: "Bridge Engineering", faculty: "Dr Mohanraj A" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Karthiga Shenbagam N" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Geethamani R" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Mohanraj A" },
+                    { code: "CV403", name: "Construction Safety", faculty: "Dr Karthiga Shenbagam N" }
+                ],
+                8: [
+                    { code: "CV404", name: "Urban Planning", faculty: "Dr Geethamani R" },
+                    { code: "CV405", name: "Smart Cities", faculty: "Dr Mohanraj A" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Karthiga Shenbagam N" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Geethamani R" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Mohanraj A" },
+                    { code: "CV406", name: "Value Engineering", faculty: "Dr Karthiga Shenbagam N" }
+                ]
+            },
+
+            // ==================== BIOTECHNOLOGY ====================
+            "BIOTECH": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "BT101", name: "Biology for Engineers", faculty: "Dr Balakrishnaraja R" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "CS101", name: "Programming in C", faculty: "Dr Sasikala D" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "BT102", name: "Biochemistry", faculty: "Dr Balakrishnaraja R" },
+                    { code: "BT103", name: "Microbiology", faculty: "Dr Kannan K P" },
+                    { code: "BT104", name: "Cell Biology", faculty: "Dr Tamilselvi S" },
+                    { code: "CH102", name: "Organic Chemistry", faculty: "Dr Praveena R" },
+                    { code: "ES101", name: "Environmental Science", faculty: "Dr Praveena R" }
+                ],
+                3: [
+                    { code: "BT201", name: "Genetics", faculty: "Dr Balakrishnaraja R" },
+                    { code: "BT202", name: "Molecular Biology", faculty: "Dr Kannan K P" },
+                    { code: "BT203", name: "Bioprocess Engineering", faculty: "Dr Tamilselvi S" },
+                    { code: "BT204", name: "Immunology", faculty: "Dr Kirupa Sankar M" },
+                    { code: "BT205", name: "Enzyme Technology", faculty: "Dr Balakrishnaraja R" },
+                    { code: "MA203", name: "Discrete Mathematics", faculty: "Dr Parimala M" }
+                ],
+                4: [
+                    { code: "BT206", name: "Genetic Engineering", faculty: "Dr Kannan K P" },
+                    { code: "BT207", name: "Bioinformatics", faculty: "Dr Tamilselvi S" },
+                    { code: "BT208", name: "Fermentation Technology", faculty: "Dr Kirupa Sankar M" },
+                    { code: "BT209", name: "Biosensors", faculty: "Dr Balakrishnaraja R" },
+                    { code: "BT210", name: "Animal Biotechnology", faculty: "Dr Kannan K P" },
+                    { code: "BT211", name: "Plant Biotechnology", faculty: "Dr Tamilselvi S" }
+                ],
+                5: [
+                    { code: "BT301", name: "Food Technology", faculty: "Dr Kirupa Sankar M" },
+                    { code: "BT302", name: "Pharmaceutical Biotechnology", faculty: "Dr Balakrishnaraja R" },
+                    { code: "BT303", name: "Industrial Biotechnology", faculty: "Dr Kannan K P" },
+                    { code: "BT304", name: "Nanobiotechnology", faculty: "Dr Tamilselvi S" },
+                    { code: "BT305", name: "Bioremediation", faculty: "Dr Kirupa Sankar M" },
+                    { code: "BT306", name: "Biopolymers", faculty: "Dr Balakrishnaraja R" }
+                ],
+                6: [
+                    { code: "BT307", name: "Stem Cell Technology", faculty: "Dr Kannan K P" },
+                    { code: "BT308", name: "Vaccine Technology", faculty: "Dr Tamilselvi S" },
+                    { code: "BT309", name: "Cancer Biology", faculty: "Dr Kirupa Sankar M" },
+                    { code: "BT310", name: "Mini Project", faculty: "Dr Balakrishnaraja R" },
+                    { code: "BT311", name: "Biostatistics", faculty: "Dr Kannan K P" },
+                    { code: "BT312", name: "Research Methods", faculty: "Dr Tamilselvi S" }
+                ],
+                7: [
+                    { code: "BT401", name: "Clinical Research", faculty: "Dr Kirupa Sankar M" },
+                    { code: "BT402", name: "Regulatory Affairs", faculty: "Dr Balakrishnaraja R" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Kannan K P" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Tamilselvi S" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Kirupa Sankar M" },
+                    { code: "BT403", name: "Bioethics", faculty: "Dr Balakrishnaraja R" }
+                ],
+                8: [
+                    { code: "BT404", name: "Drug Discovery", faculty: "Dr Kannan K P" },
+                    { code: "BT405", name: "Genomics", faculty: "Dr Tamilselvi S" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Kirupa Sankar M" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Balakrishnaraja R" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Kannan K P" },
+                    { code: "BT406", name: "Entrepreneurship", faculty: "Dr Tamilselvi S" }
+                ]
+            },
+
+            // ==================== AGRICULTURAL ENGINEERING ====================
+            "AGRI": {
+                1: [
+                    { code: "MA101", name: "Engineering Mathematics I", faculty: "Dr Parimala M" },
+                    { code: "PH101", name: "Engineering Physics", faculty: "Dr Sadasivam K" },
+                    { code: "AG101", name: "Principles of Agronomy", faculty: "Dr Chelladurai V" },
+                    { code: "CH101", name: "Engineering Chemistry", faculty: "Dr Praveena R" },
+                    { code: "CS101", name: "Programming in C", faculty: "Dr Sasikala D" },
+                    { code: "EN101", name: "English", faculty: "Dr Ajai A" }
+                ],
+                2: [
+                    { code: "MA102", name: "Engineering Mathematics II", faculty: "Dr Thulasimani T" },
+                    { code: "AG102", name: "Soil Science", faculty: "Dr Chelladurai V" },
+                    { code: "AG103", name: "Farm Machinery", faculty: "Dr Uvaraja V C" },
+                    { code: "AG104", name: "Irrigation Engineering", faculty: "Dr Vasudevan M" },
+                    { code: "ME101", name: "Engineering Graphics", faculty: "Dr Ravi Kumar M" },
+                    { code: "ES101", name: "Environmental Science", faculty: "Dr Praveena R" }
+                ],
+                3: [
+                    { code: "AG201", name: "Crop Production", faculty: "Dr Chelladurai V" },
+                    { code: "AG202", name: "Fluid Mechanics", faculty: "Dr Uvaraja V C" },
+                    { code: "AG203", name: "Surveying", faculty: "Dr Vasudevan M" },
+                    { code: "AG204", name: "Agricultural Economics", faculty: "Dr Vinoth Kumar J" },
+                    { code: "AG205", name: "Post Harvest Technology", faculty: "Dr Chelladurai V" },
+                    { code: "MA203", name: "Discrete Mathematics", faculty: "Dr Parimala M" }
+                ],
+                4: [
+                    { code: "AG206", name: "Dairy Engineering", faculty: "Dr Uvaraja V C" },
+                    { code: "AG207", name: "Renewable Energy", faculty: "Dr Vasudevan M" },
+                    { code: "AG208", name: "Agricultural Processing", faculty: "Dr Vinoth Kumar J" },
+                    { code: "AG209", name: "Precision Farming", faculty: "Dr Chelladurai V" },
+                    { code: "AG210", name: "Water Management", faculty: "Dr Uvaraja V C" },
+                    { code: "AG211", name: "GIS in Agriculture", faculty: "Dr Vasudevan M" }
+                ],
+                5: [
+                    { code: "AG301", name: "Food Engineering", faculty: "Dr Vinoth Kumar J" },
+                    { code: "AG302", name: "Agricultural Extension", faculty: "Dr Chelladurai V" },
+                    { code: "AG303", name: "Sustainable Agriculture", faculty: "Dr Uvaraja V C" },
+                    { code: "AG304", name: "Seed Technology", faculty: "Dr Vasudevan M" },
+                    { code: "AG305", name: "Plant Protection", faculty: "Dr Vinoth Kumar J" },
+                    { code: "AG306", name: "Soil Conservation", faculty: "Dr Chelladurai V" }
+                ],
+                6: [
+                    { code: "AG307", name: "Greenhouse Technology", faculty: "Dr Uvaraja V C" },
+                    { code: "AG308", name: "Hydroponics", faculty: "Dr Vasudevan M" },
+                    { code: "AG309", name: "Organic Farming", faculty: "Dr Vinoth Kumar J" },
+                    { code: "AG310", name: "Mini Project", faculty: "Dr Chelladurai V" },
+                    { code: "AG311", name: "Agricultural Marketing", faculty: "Dr Uvaraja V C" },
+                    { code: "AG312", name: "Farm Management", faculty: "Dr Vasudevan M" }
+                ],
+                7: [
+                    { code: "AG401", name: "Agricultural Robotics", faculty: "Dr Vinoth Kumar J" },
+                    { code: "AG402", name: "Smart Farming", faculty: "Dr Chelladurai V" },
+                    { code: "EL401", name: "Elective I", faculty: "Dr Uvaraja V C" },
+                    { code: "EL402", name: "Elective II", faculty: "Dr Vasudevan M" },
+                    { code: "PRJ401", name: "Project Phase I", faculty: "Dr Vinoth Kumar J" },
+                    { code: "AG403", name: "Agribusiness Management", faculty: "Dr Chelladurai V" }
+                ],
+                8: [
+                    { code: "AG404", name: "Climate Smart Agriculture", faculty: "Dr Uvaraja V C" },
+                    { code: "AG405", name: "Vertical Farming", faculty: "Dr Vasudevan M" },
+                    { code: "INT401", name: "Internship", faculty: "Dr Vinoth Kumar J" },
+                    { code: "PRJ402", name: "Major Project", faculty: "Dr Chelladurai V" },
+                    { code: "SEM401", name: "Seminar", faculty: "Dr Uvaraja V C" },
+                    { code: "AG406", name: "Entrepreneurship", faculty: "Dr Vasudevan M" }
+                ]
+            }
+        };
+
+        function initGaugeChart() {
+            const ctx = document.getElementById('gaugeChart').getContext('2d');
+            gaugeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { datasets: [{ data: [0, 100], backgroundColor: ['#ff6b6b', '#2c3e50'], circumference: 180, rotation: 270, borderWidth: 0 }] },
+                options: { cutout: '70%', responsive: true, maintainAspectRatio: true, plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+            });
+        }
+
+        function initTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: ['Rating 1', 'Rating 2', 'Rating 3', 'Rating 4', 'Rating 5'], datasets: [{ label: 'Satisfaction Score', data: [0, 0, 0, 0, 0], borderColor: '#48246E', backgroundColor: 'rgba(72, 36, 110, 0.1)', tension: 0.4, fill: true }] },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Satisfaction %' } } } }
+            });
+        }
+
+        function updateGauge(percentage) {
+            if (gaugeChart) { gaugeChart.data.datasets[0].data = [percentage, 100 - percentage]; gaugeChart.update(); }
+        }
+
+        function updateTrendChart(percentage) {
+            satisfactionHistory.push(percentage);
+            if (satisfactionHistory.length > 5) satisfactionHistory.shift();
+            if (trendChart) { trendChart.data.datasets[0].data = [...satisfactionHistory]; trendChart.update(); }
+        }
+
+        function updatePrediction() {
+            const ratings = Object.values(currentRatings);
+            const total = ratings.reduce((a, b) => a + b, 0);
+            const maxTotal = ratings.length * 5;
+            const percentage = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
+            const avgRating = maxTotal > 0 ? (total / ratings.length).toFixed(1) : 0;
+            const ratedCount = ratings.filter(r => r > 0).length;
+            
+            document.getElementById('percentageValue').textContent = Math.round(percentage) + '%';
+            document.getElementById('avgRating').textContent = avgRating;
+            document.getElementById('totalRatings').textContent = ratedCount;
+            document.getElementById('satisfactionFill').style.width = percentage + '%';
+            document.getElementById('satisfactionFill').textContent = Math.round(percentage) + '%';
+            updateGauge(percentage);
+            if (ratedCount === ratings.length) updateTrendChart(percentage);
+            
+            let label = '', color = '';
+            if (percentage >= 80) { label = 'Highly Satisfied'; color = '#4CAF50'; }
+            else if (percentage >= 60) { label = 'Satisfied'; color = '#8BC34A'; }
+            else if (percentage >= 40) { label = 'Neutral'; color = '#FFC107'; }
+            else if (percentage >= 20) { label = 'Dissatisfied'; color = '#FF9800'; }
+            else { label = 'Highly Dissatisfied'; color = '#f44336'; }
+            
+            const badge = document.getElementById('predictionBadge');
+            badge.textContent = `${Math.round(percentage)}% - ${label}`;
+            badge.style.backgroundColor = color;
+            badge.style.color = percentage >= 40 ? '#333' : 'white';
+        }
+
+        async function checkAuth() {
+            const response = await fetch('/api/me', { credentials: 'include' });
+            if (!response.ok) { window.location.href = '/login.html'; return; }
+            currentUser = await response.json();
+            document.getElementById('userName').textContent = currentUser.full_name;
+        }
+
+        function loadYears() {
+            document.getElementById('year').value = '';
+            document.getElementById('semester').innerHTML = '<option value="">Select Semester</option>';
+            for(let i=1; i<=8; i++) {
+                document.getElementById('semester').innerHTML += `<option value="${i}">Semester ${i}</option>`;
+            }
+            document.getElementById('courseList').innerHTML = '';
+        }
+
+        function loadSemesters() {
+            document.getElementById('semester').value = '';
+            document.getElementById('courseList').innerHTML = '';
+        }
+
+        function loadCourses() {
+            const department = document.getElementById('department').value;
+            const semester = document.getElementById('semester').value;
+            
+            if (!department || !semester) return;
+            
+            const courses = courseDatabase[department]?.[semester];
+            if (!courses) {
+                document.getElementById('courseList').innerHTML = '<p>No courses available for this selection</p>';
+                return;
+            }
+            
+            const courseListDiv = document.getElementById('courseList');
+            courseListDiv.innerHTML = '';
+            
+            courses.forEach((course, index) => {
+                const courseDiv = document.createElement('div');
+                courseDiv.className = 'course-item';
+                courseDiv.innerHTML = `
+                    <div class="course-code">${course.code}</div>
+                    <div class="course-name">${course.name}</div>
+                    <div style="font-size: 12px; color: #48246E; margin-top: 5px;">${course.faculty}</div>
+                `;
+                courseDiv.onclick = () => selectCourse(course, courseDiv);
+                courseListDiv.appendChild(courseDiv);
+            });
+        }
+
+        function selectCourse(course, element) {
+            document.querySelectorAll('.course-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            document.getElementById('selectedCourse').value = course.code;
+            document.getElementById('selectedCourseName').value = course.name;
+            document.getElementById('selectedFaculty').value = course.faculty;
+            document.getElementById('facultyName').value = course.faculty;
+            
+            const courseInfo = document.getElementById('courseInfo');
+            const courseDetails = document.getElementById('courseDetails');
+            courseDetails.innerHTML = `<strong>${course.code}</strong> - ${course.name}<br>
+                                       <i class="fas fa-calendar"></i> Semester ${document.getElementById('semester').value} | 
+                                       ${document.getElementById('period').value} |
+                                       <i class="fas fa-user-tie"></i> ${course.faculty}`;
+            courseInfo.style.display = 'block';
+        }
+
+        function attachStarRatings() {
+            document.querySelectorAll('.rating-stars').forEach(container => {
+                const stars = container.querySelectorAll('.star');
+                const ratingType = container.dataset.rating;
+                stars.forEach(star => {
+                    star.addEventListener('click', function() {
+                        const value = parseInt(this.dataset.value);
+                        currentRatings[ratingType] = value;
+                        document.getElementById(ratingType).value = value;
+                        stars.forEach((s, index) => {
+                            if (index < value) s.classList.add('active');
+                            else s.classList.remove('active');
+                        });
+                        updatePrediction();
+                    });
+                });
+            });
+        }
+
+        document.getElementById('academicForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const courseCode = document.getElementById('selectedCourse').value;
+            const courseName = document.getElementById('selectedCourseName').value;
+            const facultyName = document.getElementById('selectedFaculty').value;
+            
+            if (!courseCode) {
+                showAlert('Please select a course', 'error');
+                return;
+            }
+            
+            const formData = {
+                course_code: courseCode,
+                course_name: courseName,
+                faculty_name: facultyName,
+                clarity: parseInt(document.getElementById('clarity').value),
+                materials: parseInt(document.getElementById('materials').value),
+                time_management: parseInt(document.getElementById('time_management').value),
+                syllabus_coverage: parseInt(document.getElementById('syllabus_coverage').value),
+                overall_satisfaction: parseInt(document.getElementById('overall_satisfaction').value),
+                comments: document.getElementById('comments').value
+            };
+            
+            for (let key in formData) {
+                if (key.includes('_') && key !== 'course_code' && key !== 'course_name' && key !== 'faculty_name' && key !== 'comments') {
+                    if (!formData[key] || formData[key] === 0) {
+                        showAlert(`Please rate all fields before submitting!`, 'error');
+                        return;
+                    }
+                }
+            }
+            
+            const response = await fetch('/api/academic/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(formData)
+            });
+            
+            const data = await response.json();
+            if (response.ok) {
+                showAlert(`Feedback submitted! Prediction: ${data.prediction_score}% - ${data.prediction_label}`, 'success');
+                setTimeout(() => window.location.href = '/student.html', 2000);
+            } else {
+                showAlert(data.error, 'error');
+            }
+        });
+
+        function showAlert(msg, type) {
+            const alertDiv = document.getElementById('alert');
+            alertDiv.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'}"></i> ${msg}`;
+            alertDiv.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+            alertDiv.style.display = 'block';
+            setTimeout(() => alertDiv.style.display = 'none', 3000);
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = '/login.html';
+        }
+
+        checkAuth();
+        attachStarRatings();
+        initGaugeChart();
+        initTrendChart();
+    </script>
+</body>
+</html>
