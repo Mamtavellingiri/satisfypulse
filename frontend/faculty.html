@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faculty Dashboard - SatisfyPulse</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="purple-bar"></div>
@@ -57,54 +58,71 @@
     </div>
 
     <script>
+        // BACKEND API URL
+        const API_URL = 'https://satisfypulse-backend.onrender.com';
+
         async function loadUserData() {
-            const response = await fetch('/api/me', { credentials: 'include' });
-            if (!response.ok) {
-                window.location.href = '/login.html';
-                return;
+            try {
+                const response = await fetch(`${API_URL}/api/me`, { 
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                const user = await response.json();
+                document.getElementById('userName').textContent = user.full_name;
+                document.getElementById('facultyName').textContent = user.full_name.split(' ')[0];
+                loadFeedback();
+            } catch (error) {
+                window.location.href = 'login.html';
             }
-            const user = await response.json();
-            document.getElementById('userName').textContent = user.full_name;
-            document.getElementById('facultyName').textContent = user.full_name.split(' ')[0];
-            loadFeedback();
         }
 
         async function loadFeedback() {
-            const response = await fetch('/api/faculty/my-feedback', { credentials: 'include' });
-            const feedbacks = await response.json();
-            
-            const tbody = document.getElementById('feedbackList');
-            tbody.innerHTML = '';
-            
-            let total = 0, sum = 0, positive = 0;
-            
-            feedbacks.forEach(fb => {
-                const row = tbody.insertRow();
-                row.insertCell(0).textContent = fb.student_name;
-                row.insertCell(1).textContent = fb.subject || 'N/A';
-                row.insertCell(2).textContent = fb.teaching_quality;
-                row.insertCell(3).textContent = fb.punctuality;
-                row.insertCell(4).textContent = fb.doubt_clearing;
-                row.insertCell(5).textContent = fb.overall_rating;
-                row.insertCell(6).textContent = fb.comments?.substring(0, 50) || '';
+            try {
+                const response = await fetch(`${API_URL}/api/faculty/my-feedback`, { 
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const feedbacks = await response.json();
                 
-                const sentiment = fb.sentiment_label || 'Neutral';
-                row.insertCell(7).innerHTML = `<span class="sentiment-${sentiment.toLowerCase()}">${sentiment}</span>`;
-                row.insertCell(8).textContent = new Date(fb.submission_date).toLocaleDateString();
+                const tbody = document.getElementById('feedbackList');
+                tbody.innerHTML = '';
                 
-                total++;
-                sum += fb.overall_rating;
-                if (sentiment === 'Positive') positive++;
-            });
-            
-            document.getElementById('totalFeedback').textContent = total;
-            document.getElementById('avgRating').textContent = total > 0 ? (sum/total).toFixed(1) : 0;
-            document.getElementById('positiveCount').textContent = positive;
+                let total = 0, sum = 0, positive = 0;
+                
+                feedbacks.forEach(fb => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = fb.student_name || 'Anonymous';
+                    row.insertCell(1).textContent = fb.subject || 'N/A';
+                    row.insertCell(2).textContent = fb.teaching_quality || 'N/A';
+                    row.insertCell(3).textContent = fb.punctuality || 'N/A';
+                    row.insertCell(4).textContent = fb.doubt_clearing || 'N/A';
+                    row.insertCell(5).textContent = fb.overall_rating || 'N/A';
+                    row.insertCell(6).textContent = fb.comments?.substring(0, 50) || '';
+                    
+                    const sentiment = fb.sentiment_label || 'Neutral';
+                    row.insertCell(7).innerHTML = `<span class="sentiment-${sentiment.toLowerCase()}">${sentiment}</span>`;
+                    row.insertCell(8).textContent = fb.submission_date ? new Date(fb.submission_date).toLocaleDateString() : 'N/A';
+                    
+                    total++;
+                    sum += fb.overall_rating || 0;
+                    if (sentiment === 'Positive') positive++;
+                });
+                
+                document.getElementById('totalFeedback').textContent = total;
+                document.getElementById('avgRating').textContent = total > 0 ? (sum/total).toFixed(1) : 0;
+                document.getElementById('positiveCount').textContent = positive;
+            } catch (error) {
+                console.error('Error loading feedback:', error);
+            }
         }
 
         async function logout() {
-            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-            window.location.href = '/login.html';
+            await fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+            window.location.href = 'login.html';
         }
 
         loadUserData();

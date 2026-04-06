@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Academic Feedback with Predictor - SatisfyPulse</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .filter-group {
@@ -352,6 +353,9 @@
     </div>
 
     <script>
+        // BACKEND API URL - CHANGE THIS TO YOUR RENDER URL
+        const API_URL = 'https://satisfypulse-backend.onrender.com';
+        
         let currentUser = null;
         let gaugeChart = null;
         let trendChart = null;
@@ -434,7 +438,6 @@
                     { code: "CS412", name: "Major Project", faculty: "Dr Premalatha K" }
                 ]
             },
-
             // ==================== INFORMATION TECHNOLOGY ====================
             "IT": {
                 1: [
@@ -502,7 +505,6 @@
                     { code: "IT406", name: "Industry 4.0", faculty: "Dr Sadhasivam N" }
                 ]
             },
-
             // ==================== ARTIFICIAL INTELLIGENCE AND DATA SCIENCE ====================
             "AIDS": {
                 1: [
@@ -570,7 +572,6 @@
                     { code: "AIDS406", name: "Industry Readiness", faculty: "Dr Eswaramoorthy V" }
                 ]
             },
-
             // ==================== ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING ====================
             "AIML": {
                 1: [
@@ -638,7 +639,6 @@
                     { code: "AIML406", name: "Research Project", faculty: "Dr Gopalakrishnan B" }
                 ]
             },
-
             // ==================== ELECTRONICS AND COMMUNICATION ENGINEERING ====================
             "ECE": {
                 1: [
@@ -706,7 +706,6 @@
                     { code: "ECE406", name: "Industry Readiness", faculty: "Dr Poongodi C" }
                 ]
             },
-
             // ==================== MECHANICAL ENGINEERING ====================
             "MECH": {
                 1: [
@@ -774,7 +773,6 @@
                     { code: "ME406", name: "Industry 4.0", faculty: "Dr Senthilkumar G" }
                 ]
             },
-
             // ==================== ELECTRICAL AND ELECTRONICS ENGINEERING ====================
             "EEE": {
                 1: [
@@ -842,7 +840,6 @@
                     { code: "EEE406", name: "Power System Economics", faculty: "Dr Bharani Kumar R" }
                 ]
             },
-
             // ==================== CIVIL ENGINEERING ====================
             "CIVIL": {
                 1: [
@@ -910,7 +907,6 @@
                     { code: "CV406", name: "Value Engineering", faculty: "Dr Karthiga Shenbagam N" }
                 ]
             },
-
             // ==================== BIOTECHNOLOGY ====================
             "BIOTECH": {
                 1: [
@@ -978,7 +974,6 @@
                     { code: "BT406", name: "Entrepreneurship", faculty: "Dr Tamilselvi S" }
                 ]
             },
-
             // ==================== AGRICULTURAL ENGINEERING ====================
             "AGRI": {
                 1: [
@@ -1106,10 +1101,25 @@
         }
 
         async function checkAuth() {
-            const response = await fetch('/api/me', { credentials: 'include' });
-            if (!response.ok) { window.location.href = '/login.html'; return; }
-            currentUser = await response.json();
-            document.getElementById('userName').textContent = currentUser.full_name;
+            try {
+                const response = await fetch(`${API_URL}/api/me`, { 
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    console.error('Auth failed:', response.status);
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                currentUser = await response.json();
+                document.getElementById('userName').textContent = currentUser.full_name;
+            } catch (error) {
+                console.error('Connection error:', error);
+                window.location.href = 'login.html';
+            }
         }
 
         function loadYears() {
@@ -1197,9 +1207,15 @@
             const courseCode = document.getElementById('selectedCourse').value;
             const courseName = document.getElementById('selectedCourseName').value;
             const facultyName = document.getElementById('selectedFaculty').value;
+            const period = document.getElementById('period').value;
             
             if (!courseCode) {
                 showAlert('Please select a course', 'error');
+                return;
+            }
+            
+            if (!period) {
+                showAlert('Please select PT1 or PT2 period', 'error');
                 return;
             }
             
@@ -1207,6 +1223,7 @@
                 course_code: courseCode,
                 course_name: courseName,
                 faculty_name: facultyName,
+                period: period,
                 clarity: parseInt(document.getElementById('clarity').value),
                 materials: parseInt(document.getElementById('materials').value),
                 time_management: parseInt(document.getElementById('time_management').value),
@@ -1216,7 +1233,7 @@
             };
             
             for (let key in formData) {
-                if (key.includes('_') && key !== 'course_code' && key !== 'course_name' && key !== 'faculty_name' && key !== 'comments') {
+                if (key.includes('_') && key !== 'course_code' && key !== 'course_name' && key !== 'faculty_name' && key !== 'comments' && key !== 'period') {
                     if (!formData[key] || formData[key] === 0) {
                         showAlert(`Please rate all fields before submitting!`, 'error');
                         return;
@@ -1224,19 +1241,23 @@
                 }
             }
             
-            const response = await fetch('/api/academic/feedback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(formData)
-            });
-            
-            const data = await response.json();
-            if (response.ok) {
-                showAlert(`Feedback submitted! Prediction: ${data.prediction_score}% - ${data.prediction_label}`, 'success');
-                setTimeout(() => window.location.href = '/student.html', 2000);
-            } else {
-                showAlert(data.error, 'error');
+            try {
+                const response = await fetch(`${API_URL}/api/academic/feedback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    showAlert(`Feedback submitted! Prediction: ${data.prediction_score}% - ${data.prediction_label}`, 'success');
+                    setTimeout(() => window.location.href = 'student.html', 2000);
+                } else {
+                    showAlert(data.error || 'Submission failed', 'error');
+                }
+            } catch (error) {
+                showAlert('Cannot connect to server. Please try again.', 'error');
             }
         });
 
@@ -1249,10 +1270,11 @@
         }
 
         async function logout() {
-            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-            window.location.href = '/login.html';
+            await fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+            window.location.href = 'login.html';
         }
 
+        // Initialize everything
         checkAuth();
         attachStarRatings();
         initGaugeChart();

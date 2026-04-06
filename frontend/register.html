@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - SatisfyPulse</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="purple-bar"></div>
@@ -53,12 +54,15 @@
                 <button type="submit" class="btn">Register</button>
             </form>
             <p style="text-align: center; margin-top: 20px;">
-                Already have an account? <a href="/login.html">Login here</a>
+                Already have an account? <a href="login.html">Login here</a>
             </p>
         </div>
     </div>
 
     <script>
+        // BACKEND API URL
+        const API_URL = 'https://satisfypulse-backend.onrender.com';
+
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const password = document.getElementById('password').value;
@@ -69,24 +73,28 @@
                 return;
             }
 
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    full_name: document.getElementById('full_name').value,
-                    email: document.getElementById('email').value,
-                    department: document.getElementById('department').value,
-                    password: password,
-                    role: 'student'
-                })
-            });
+            try {
+                const response = await fetch(`${API_URL}/api/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        full_name: document.getElementById('full_name').value,
+                        email: document.getElementById('email').value,
+                        department: document.getElementById('department').value,
+                        password: password,
+                        role: 'student'
+                    })
+                });
 
-            const data = await response.json();
-            if (response.ok) {
-                showAlert('Registration successful! Please login.', 'success');
-                setTimeout(() => window.location.href = '/login.html', 2000);
-            } else {
-                showAlert(data.error, 'error');
+                const data = await response.json();
+                if (response.ok) {
+                    showAlert('Registration successful! Please login.', 'success');
+                    setTimeout(() => window.location.href = 'login.html', 2000);
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Cannot connect to server. Please try again.', 'error');
             }
         });
 

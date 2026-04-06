@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SatisfyPulse</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="purple-bar"></div>
@@ -34,7 +35,7 @@
                 <button type="submit" class="btn">Login</button>
             </form>
             <p style="text-align: center; margin-top: 20px;">
-                Don't have an account? <a href="/register.html">Register here</a>
+                Don't have an account? <a href="register.html">Register here</a>
             </p>
             <hr style="margin: 20px 0;">
             <div style="font-size: 12px; color: #666;">
@@ -47,26 +48,37 @@
     </div>
 
     <script>
+        // BACKEND API URL
+        const API_URL = 'https://satisfypulse-backend.onrender.com';
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ email, password })
-            });
+            try {
+                const response = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
 
-            const data = await response.json();
-            if (response.ok) {
-                if (data.user.role === 'student') window.location.href = '/student.html';
-                else if (data.user.role === 'faculty') window.location.href = '/faculty.html';
-                else if (data.user.role === 'admin') window.location.href = '/admin.html';
-            } else {
+                const data = await response.json();
+                if (response.ok) {
+                    if (data.user.role === 'student') window.location.href = 'student.html';
+                    else if (data.user.role === 'faculty') window.location.href = 'faculty.html';
+                    else if (data.user.role === 'admin') window.location.href = 'admin.html';
+                } else {
+                    const alertDiv = document.getElementById('alert');
+                    alertDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.error}`;
+                    alertDiv.className = 'alert alert-error';
+                    alertDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
                 const alertDiv = document.getElementById('alert');
-                alertDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.error}`;
+                alertDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Cannot connect to server. Please make sure the backend is running.`;
                 alertDiv.className = 'alert alert-error';
                 alertDiv.style.display = 'block';
             }

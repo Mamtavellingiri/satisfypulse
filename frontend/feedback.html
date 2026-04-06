@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feedback Form - SatisfyPulse</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="purple-bar"></div>
@@ -26,22 +27,26 @@
     </div>
 
     <script>
+        // BACKEND API URL
+        const API_URL = 'https://satisfypulse-backend.onrender.com';
+        
         let currentUser = null;
-
-        // Get feedback type from URL
         const urlParams = new URLSearchParams(window.location.search);
         const feedbackType = urlParams.get('type');
 
-        // Check authentication
         async function checkAuth() {
-            const response = await fetch('/api/me', { credentials: 'include' });
-            if (!response.ok) {
-                window.location.href = '/login.html';
-                return;
+            try {
+                const response = await fetch(`${API_URL}/api/me`, { credentials: 'include' });
+                if (!response.ok) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                currentUser = await response.json();
+                document.getElementById('userName').textContent = currentUser.full_name;
+                loadForm();
+            } catch (error) {
+                window.location.href = 'login.html';
             }
-            currentUser = await response.json();
-            document.getElementById('userName').textContent = currentUser.full_name;
-            loadForm();
         }
 
         async function loadForm() {
@@ -61,13 +66,13 @@
                 container.innerHTML = getInfrastructureForm();
                 attachInfrastructureFormHandler();
             } else {
-                container.innerHTML = '<div class="card"><h3>Invalid Feedback Type</h3><p>Please select a valid feedback category.</p><a href="/student.html">Go back to Dashboard</a></div>';
+                container.innerHTML = '<div class="card"><h3>Invalid Feedback Type</h3><p>Please select a valid feedback category.</p><a href="student.html">Go back to Dashboard</a></div>';
             }
         }
 
         async function loadInstructors() {
             const dept = currentUser.department;
-            const response = await fetch(`/api/instructors?department=${dept}`, { credentials: 'include' });
+            const response = await fetch(`${API_URL}/api/instructors?department=${encodeURIComponent(dept)}`, { credentials: 'include' });
             const instructors = await response.json();
             
             const select = document.getElementById('instructor_name');
@@ -86,58 +91,13 @@
                 <form id="facultyForm">
                     <div class="form-group">
                         <label><i class="fas fa-user-tie"></i> Instructor Name</label>
-                        <select id="instructor_name" required>
-                            <option value="">Select Instructor</option>
-                        </select>
+                        <select id="instructor_name" required><option value="">Select Instructor</option></select>
                     </div>
                     <div class="form-group">
                         <label><i class="fas fa-book"></i> Subject/Course</label>
                         <input type="text" id="subject" required placeholder="Enter subject name">
                     </div>
-                    <div class="rating-group">
-                        <label>Teaching Quality</label>
-                        <div class="rating-stars" data-rating="teaching_quality">
-                            <span class="star" data-value="1">★</span>
-                            <span class="star" data-value="2">★</span>
-                            <span class="star" data-value="3">★</span>
-                            <span class="star" data-value="4">★</span>
-                            <span class="star" data-value="5">★</span>
-                        </div>
-                        <input type="hidden" id="teaching_quality" value="0">
-                    </div>
-                    <div class="rating-group">
-                        <label>Punctuality</label>
-                        <div class="rating-stars" data-rating="punctuality">
-                            <span class="star" data-value="1">★</span>
-                            <span class="star" data-value="2">★</span>
-                            <span class="star" data-value="3">★</span>
-                            <span class="star" data-value="4">★</span>
-                            <span class="star" data-value="5">★</span>
-                        </div>
-                        <input type="hidden" id="punctuality" value="0">
-                    </div>
-                    <div class="rating-group">
-                        <label>Doubt Clearing</label>
-                        <div class="rating-stars" data-rating="doubt_clearing">
-                            <span class="star" data-value="1">★</span>
-                            <span class="star" data-value="2">★</span>
-                            <span class="star" data-value="3">★</span>
-                            <span class="star" data-value="4">★</span>
-                            <span class="star" data-value="5">★</span>
-                        </div>
-                        <input type="hidden" id="doubt_clearing" value="0">
-                    </div>
-                    <div class="rating-group">
-                        <label>Overall Rating</label>
-                        <div class="rating-stars" data-rating="overall_rating">
-                            <span class="star" data-value="1">★</span>
-                            <span class="star" data-value="2">★</span>
-                            <span class="star" data-value="3">★</span>
-                            <span class="star" data-value="4">★</span>
-                            <span class="star" data-value="5">★</span>
-                        </div>
-                        <input type="hidden" id="overall_rating" value="0">
-                    </div>
+                    ${getRatingFields(['teaching_quality', 'punctuality', 'doubt_clearing', 'overall_rating'])}
                     <div class="form-group">
                         <label><i class="fas fa-comment"></i> Comments</label>
                         <textarea id="comments" rows="4" placeholder="Share your feedback..."></textarea>
@@ -217,13 +177,12 @@
                             <option value="Lab">Lab</option>
                             <option value="Library">Library</option>
                             <option value="Auditorium">Auditorium</option>
-                            <option value="Sports Ground">Sports Ground</option>
                         </select>
                     </div>
                     ${getRatingFields(['cleanliness', 'seating', 'lighting', 'ventilation', 'equipment', 'maintenance'])}
                     <div class="form-group">
                         <label><i class="fas fa-comment"></i> Comments</label>
-                        <textarea id="comments" rows="4" placeholder="Share your feedback about infrastructure..."></textarea>
+                        <textarea id="comments" rows="4" placeholder="Share your feedback..."></textarea>
                     </div>
                     <button type="submit" class="btn">Submit Feedback</button>
                 </form>
@@ -232,22 +191,15 @@
 
         function getRatingFields(fields) {
             const fieldLabels = {
-                'cleanliness': 'Cleanliness',
-                'water_supply': 'Water Supply',
-                'electricity': 'Electricity',
-                'wifi_quality': 'WiFi Quality',
-                'warden_behavior': 'Warden Behavior',
-                'security': 'Security',
-                'maintenance': 'Maintenance',
-                'food_quality': 'Food Quality',
-                'taste': 'Taste',
-                'hygiene': 'Hygiene',
-                'variety': 'Variety',
-                'quantity': 'Quantity',
-                'serving_staff': 'Serving Staff',
-                'seating': 'Seating Comfort',
-                'lighting': 'Lighting',
-                'ventilation': 'Ventilation',
+                'teaching_quality': 'Teaching Quality', 'punctuality': 'Punctuality',
+                'doubt_clearing': 'Doubt Clearing', 'overall_rating': 'Overall Rating',
+                'cleanliness': 'Cleanliness', 'water_supply': 'Water Supply',
+                'electricity': 'Electricity', 'wifi_quality': 'WiFi Quality',
+                'warden_behavior': 'Warden Behavior', 'security': 'Security',
+                'maintenance': 'Maintenance', 'food_quality': 'Food Quality',
+                'taste': 'Taste', 'hygiene': 'Hygiene', 'variety': 'Variety',
+                'quantity': 'Quantity', 'serving_staff': 'Serving Staff',
+                'seating': 'Seating', 'lighting': 'Lighting', 'ventilation': 'Ventilation',
                 'equipment': 'Equipment'
             };
             
@@ -279,13 +231,9 @@
                     star.addEventListener('click', function() {
                         const value = parseInt(this.dataset.value);
                         document.getElementById(ratingType).value = value;
-                        
                         stars.forEach((s, index) => {
-                            if (index < value) {
-                                s.classList.add('active');
-                            } else {
-                                s.classList.remove('active');
-                            }
+                            if (index < value) s.classList.add('active');
+                            else s.classList.remove('active');
                         });
                     });
                 });
@@ -306,20 +254,16 @@
                     comments: document.getElementById('comments').value
                 };
                 
-                const response = await fetch('/api/feedback/faculty', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(formData)
+                const response = await fetch(`${API_URL}/api/feedback/faculty`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify(formData)
                 });
                 
                 const data = await response.json();
                 if (response.ok) {
                     showAlert('Feedback submitted successfully!', 'success');
-                    setTimeout(() => window.location.href = '/student.html', 2000);
-                } else {
-                    showAlert(data.error, 'error');
-                }
+                    setTimeout(() => window.location.href = 'student.html', 2000);
+                } else { showAlert(data.error, 'error'); }
             });
         }
 
@@ -340,20 +284,16 @@
                     comments: document.getElementById('comments').value
                 };
                 
-                const response = await fetch('/api/feedback/hostel', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(formData)
+                const response = await fetch(`${API_URL}/api/feedback/hostel`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify(formData)
                 });
                 
                 const data = await response.json();
                 if (response.ok) {
-                    showAlert('Hostel feedback submitted successfully!', 'success');
-                    setTimeout(() => window.location.href = '/student.html', 2000);
-                } else {
-                    showAlert(data.error, 'error');
-                }
+                    showAlert('Hostel feedback submitted!', 'success');
+                    setTimeout(() => window.location.href = 'student.html', 2000);
+                } else { showAlert(data.error, 'error'); }
             });
         }
 
@@ -372,20 +312,16 @@
                     suggestions: document.getElementById('suggestions').value
                 };
                 
-                const response = await fetch('/api/feedback/mess', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(formData)
+                const response = await fetch(`${API_URL}/api/feedback/mess`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify(formData)
                 });
                 
                 const data = await response.json();
                 if (response.ok) {
-                    showAlert('Mess feedback submitted successfully!', 'success');
-                    setTimeout(() => window.location.href = '/student.html', 2000);
-                } else {
-                    showAlert(data.error, 'error');
-                }
+                    showAlert('Mess feedback submitted!', 'success');
+                    setTimeout(() => window.location.href = 'student.html', 2000);
+                } else { showAlert(data.error, 'error'); }
             });
         }
 
@@ -404,20 +340,16 @@
                     comments: document.getElementById('comments').value
                 };
                 
-                const response = await fetch('/api/feedback/infrastructure', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(formData)
+                const response = await fetch(`${API_URL}/api/feedback/infrastructure`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify(formData)
                 });
                 
                 const data = await response.json();
                 if (response.ok) {
-                    showAlert('Infrastructure feedback submitted successfully!', 'success');
-                    setTimeout(() => window.location.href = '/student.html', 2000);
-                } else {
-                    showAlert(data.error, 'error');
-                }
+                    showAlert('Infrastructure feedback submitted!', 'success');
+                    setTimeout(() => window.location.href = 'student.html', 2000);
+                } else { showAlert(data.error, 'error'); }
             });
         }
 
@@ -430,8 +362,8 @@
         }
 
         async function logout() {
-            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-            window.location.href = '/login.html';
+            await fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+            window.location.href = 'login.html';
         }
 
         checkAuth();
