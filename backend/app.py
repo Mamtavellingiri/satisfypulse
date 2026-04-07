@@ -8,10 +8,19 @@ from datetime import datetime
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 app.secret_key = 'satisfypulse_secret_key_2024'
+
+# Initialize database so it is created on Render
+from database import init_database
+try:
+    init_database()
+except Exception as e:
+    print(f"Error initializing database: {e}")
+
 CORS(app, supports_credentials=True, origins=[
     'http://localhost:5000',
     'http://127.0.0.1:5000',
-    'https://satisfypulse.vercel.app'
+    'https://satisfypulse.vercel.app',
+    'https://satisfypulse.onrender.com'
 ])
 
 def get_db():

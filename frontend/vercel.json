@@ -1,5 +1,3 @@
-# Create correct vercel.json in root folder
-@'
 {
   "rewrites": [
     {
@@ -8,7 +6,3 @@
     }
   ]
 }
-'@ | Out-File -FilePath vercel.json -Encoding utf8
-
-# Verify it was created
-Get-Content vercel.json
