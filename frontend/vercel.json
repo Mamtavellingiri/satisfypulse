@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://satisfypulse-backend.onrender.com/api/$1"
+      "destination": "https://satisfypulse.onrender.com/api/$1"
     }
   ]
 }
