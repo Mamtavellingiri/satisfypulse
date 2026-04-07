@@ -1,6 +1,14 @@
+# Create correct vercel.json in root folder
+@'
 {
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://satisfypulse-backend.onrender.com/api/$1"
+    }
   ]
 }
+'@ | Out-File -FilePath vercel.json -Encoding utf8
+
+# Verify it was created
+Get-Content vercel.json

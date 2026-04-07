@@ -28,15 +28,14 @@
 
     <script>
         // BACKEND API URL
-        const API_URL = 'https://satisfypulse-backend.onrender.com';
-        
+                
         let currentUser = null;
         const urlParams = new URLSearchParams(window.location.search);
         const feedbackType = urlParams.get('type');
 
         async function checkAuth() {
             try {
-                const response = await fetch(`${API_URL}/api/me`, { credentials: 'include' });
+                const response = await fetch(`/api/me`, { credentials: 'include' });
                 if (!response.ok) {
                     window.location.href = 'login.html';
                     return;
@@ -72,7 +71,7 @@
 
         async function loadInstructors() {
             const dept = currentUser.department;
-            const response = await fetch(`${API_URL}/api/instructors?department=${encodeURIComponent(dept)}`, { credentials: 'include' });
+            const response = await fetch(`/api/instructors?department=${encodeURIComponent(dept)}`, { credentials: 'include' });
             const instructors = await response.json();
             
             const select = document.getElementById('instructor_name');
@@ -254,7 +253,7 @@
                     comments: document.getElementById('comments').value
                 };
                 
-                const response = await fetch(`${API_URL}/api/feedback/faculty`, {
+                const response = await fetch(`/api/feedback/faculty`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     credentials: 'include', body: JSON.stringify(formData)
                 });
@@ -284,7 +283,7 @@
                     comments: document.getElementById('comments').value
                 };
                 
-                const response = await fetch(`${API_URL}/api/feedback/hostel`, {
+                const response = await fetch(`/api/feedback/hostel`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     credentials: 'include', body: JSON.stringify(formData)
                 });
@@ -312,7 +311,7 @@
                     suggestions: document.getElementById('suggestions').value
                 };
                 
-                const response = await fetch(`${API_URL}/api/feedback/mess`, {
+                const response = await fetch(`/api/feedback/mess`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     credentials: 'include', body: JSON.stringify(formData)
                 });
@@ -340,7 +339,7 @@
                     comments: document.getElementById('comments').value
                 };
                 
-                const response = await fetch(`${API_URL}/api/feedback/infrastructure`, {
+                const response = await fetch(`/api/feedback/infrastructure`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     credentials: 'include', body: JSON.stringify(formData)
                 });
@@ -362,7 +361,7 @@
         }
 
         async function logout() {
-            await fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+            await fetch(`/api/logout`, { method: 'POST', credentials: 'include' });
             window.location.href = 'login.html';
         }
 

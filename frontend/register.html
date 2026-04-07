@@ -61,8 +61,7 @@
 
     <script>
         // BACKEND API URL
-        const API_URL = 'https://satisfypulse-backend.onrender.com';
-
+        
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const password = document.getElementById('password').value;
@@ -74,7 +73,7 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/api/register`, {
+                const response = await fetch(`/api/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

@@ -59,11 +59,10 @@
 
     <script>
         // BACKEND API URL
-        const API_URL = 'https://satisfypulse-backend.onrender.com';
-
+        
         async function loadUserData() {
             try {
-                const response = await fetch(`${API_URL}/api/me`, { 
+                const response = await fetch(`/api/me`, { 
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -82,7 +81,7 @@
 
         async function loadFeedback() {
             try {
-                const response = await fetch(`${API_URL}/api/faculty/my-feedback`, { 
+                const response = await fetch(`/api/faculty/my-feedback`, { 
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -121,7 +120,7 @@
         }
 
         async function logout() {
-            await fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+            await fetch(`/api/logout`, { method: 'POST', credentials: 'include' });
             window.location.href = 'login.html';
         }
 

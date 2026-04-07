@@ -354,8 +354,7 @@
 
     <script>
         // BACKEND API URL - CHANGE THIS TO YOUR RENDER URL
-        const API_URL = 'https://satisfypulse-backend.onrender.com';
-        
+                
         let currentUser = null;
         let gaugeChart = null;
         let trendChart = null;
@@ -1102,7 +1101,7 @@
 
         async function checkAuth() {
             try {
-                const response = await fetch(`${API_URL}/api/me`, { 
+                const response = await fetch(`/api/me`, { 
                     method: 'GET',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' }
@@ -1242,7 +1241,7 @@
             }
             
             try {
-                const response = await fetch(`${API_URL}/api/academic/feedback`, {
+                const response = await fetch(`/api/academic/feedback`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1270,7 +1269,7 @@
         }
 
         async function logout() {
-            await fetch(`${API_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+            await fetch(`/api/logout`, { method: 'POST', credentials: 'include' });
             window.location.href = 'login.html';
         }
 
