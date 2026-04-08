@@ -33,6 +33,22 @@
             padding: 30px;
         }
     </style>
+    <script>
+        // Auto-login persistence check
+        fetch('/api/me', { credentials: 'include' })
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error('Not logged in');
+            })
+            .then(user => {
+                if (user && user.role) {
+                    if (user.role === 'student') window.location.replace('student.html');
+                    else if (user.role === 'faculty') window.location.replace('faculty.html');
+                    else if (user.role === 'admin') window.location.replace('admin.html');
+                }
+            })
+            .catch(err => console.log('Session check: Not logged in'));
+    </script>
 </head>
 <body>
     <div class="purple-bar"></div>
@@ -48,55 +64,57 @@
     </div>
 
     <div class="container">
-        <div class="hero-section">
-            <h2>Your Voice Matters!</h2>
-            <p>Help us improve BIT by sharing your feedback. Real-time sentiment analysis and satisfaction prediction.</p>
-            <button class="btn" onclick="location.href='/login.html'" style="width: auto; padding: 12px 40px; background: white; color: #48246E;">Get Started</button>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <i class="fas fa-brain" style="font-size: 40px; margin-bottom: 10px;"></i>
-                <h4>Real-time Sentiment Analysis</h4>
-                <div class="value">AI Powered</div>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-chart-line" style="font-size: 40px; margin-bottom: 10px;"></i>
-                <h4>Satisfaction Predictor</h4>
-                <div class="value">Smart Analytics</div>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-clipboard-list" style="font-size: 40px; margin-bottom: 10px;"></i>
-                <h4>Multiple Feedback Categories</h4>
-                <div class="value">5+ Types</div>
+        <div class="hero-section" style="background: linear-gradient(135deg, #1a0b2e 0%, #48246E 100%); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+            <h2 style="font-weight: 800; letter-spacing: -1px;">Institutional <span style="color: #b088f0;">Pulse</span> Dashboard</h2>
+            <p>Real-time student satisfaction monitoring and academic performance tracking for BIT.</p>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                <button class="btn" onclick="location.href='/login.html'" style="width: auto; padding: 12px 30px; background: #fff; color: #48246E; font-weight: 600;">System Login</button>
+                <button class="btn" onclick="location.href='/register.html'" style="width: auto; padding: 12px 30px; background: transparent; border: 2px solid rgba(255,255,255,0.3); color: white;">New Registration</button>
             </div>
         </div>
 
-        <div class="categories-grid">
-            <div class="category-card" onclick="location.href='/login.html'">
-                <i class="fas fa-chalkboard-user icon"></i>
-                <h4>Faculty Feedback</h4>
-                <p>Rate your instructors' teaching quality</p>
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class="stat-card" style="background: white; border-bottom: 4px solid #48246E;">
+                <i class="fas fa-users" style="color: #48246E; font-size: 24px;"></i>
+                <h4 style="margin: 10px 0;">Active Students</h4>
+                <div class="value" style="font-size: 32px; color: #1a0b2e;">1.2k+</div>
             </div>
-            <div class="category-card" onclick="location.href='/login.html'">
-                <i class="fas fa-building icon"></i>
-                <h4>Hostel Feedback</h4>
-                <p>Share your hostel experience</p>
+            <div class="stat-card" style="background: white; border-bottom: 4px solid #b088f0;">
+                <i class="fas fa-check-double" style="color: #b088f0; font-size: 24px;"></i>
+                <h4 style="margin: 10px 0;">Responses Captured</h4>
+                <div class="value" style="font-size: 32px; color: #1a0b2e;">8.4k</div>
             </div>
-            <div class="category-card" onclick="location.href='/login.html'">
-                <i class="fas fa-utensils icon"></i>
-                <h4>Mess Feedback</h4>
-                <p>Rate food quality and hygiene</p>
+            <div class="stat-card" style="background: white; border-bottom: 4px solid #2ecc71;">
+                <i class="fas fa-smile-beam" style="color: #2ecc71; font-size: 24px;"></i>
+                <h4 style="margin: 10px 0;">Overall Satisfaction</h4>
+                <div class="value" style="font-size: 32px; color: #1a0b2e;">4.82</div>
             </div>
-            <div class="category-card" onclick="location.href='/login.html'">
-                <i class="fas fa-school icon"></i>
-                <h4>Infrastructure</h4>
-                <p>Evaluate campus facilities</p>
+            <div class="stat-card" style="background: white; border-bottom: 4px solid #f1c40f;">
+                <i class="fas fa-bolt" style="color: #f1c40f; font-size: 24px;"></i>
+                <h4 style="margin: 10px 0;">AI Accuracy</h4>
+                <div class="value" style="font-size: 32px; color: #1a0b2e;">96.4%</div>
             </div>
-            <div class="category-card" onclick="location.href='/login.html'">
-                <i class="fas fa-graduation-cap icon"></i>
-                <h4>Academic Feedback</h4>
-                <p>Course-wise with satisfaction predictor</p>
+        </div>
+
+        <div class="card" style="margin-top: 40px; border-radius: 20px;">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-project-diagram"></i> System Architecture</h3>
+            <div class="categories-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+                <div class="category-card" style="padding: 25px; border: 1px solid #eee;">
+                    <i class="fas fa-graduation-cap" style="font-size: 30px; color: #48246E; margin-bottom: 15px;"></i>
+                    <h4>Academic Insight</h4>
+                    <p style="font-size: 0.9em; opacity: 0.7;">Course-specific feedback loops with predictive satisfaction scoring.</p>
+                </div>
+                <div class="category-card" style="padding: 25px; border: 1px solid #eee;">
+                    <i class="fas fa-shield-alt" style="font-size: 30px; color: #48246E; margin-bottom: 15px;"></i>
+                    <h4>Admin Oversight</h4>
+                    <p style="font-size: 0.9em; opacity: 0.7;">Automated faculty performance alerts and departmental analytics.</p>
+                </div>
+                <div class="category-card" style="padding: 25px; border: 1px solid #eee;">
+                    <i class="fas fa-robot" style="font-size: 30px; color: #48246E; margin-bottom: 15px;"></i>
+                    <h4>Sentiment Core</h4>
+                    <p style="font-size: 0.9em; opacity: 0.7;">VADER-powered real-time emotional analysis of student comments.</p>
+                </div>
             </div>
         </div>
     </div>

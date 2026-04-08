@@ -30,9 +30,10 @@
         </div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('feedback')"><i class="fas fa-list"></i> All Feedback</button>
-            <button class="tab-btn" onclick="showTab('instructors')"><i class="fas fa-user-plus"></i> Manage Instructors</button>
-            <button class="tab-btn" onclick="showTab('analytics')"><i class="fas fa-chart-pie"></i> Analytics</button>
+            <button class="tab-btn active" onclick="showTab('feedback', event)"><i class="fas fa-list"></i> All Feedback</button>
+            <button class="tab-btn" onclick="showTab('instructors', event)"><i class="fas fa-user-plus"></i> Manage Instructors</button>
+            <button class="tab-btn" onclick="showTab('analytics', event)"><i class="fas fa-chart-pie"></i> Analytics</button>
+            <button class="tab-btn" onclick="showTab('performance', event)"><i class="fas fa-star-half-alt"></i> Faculty Performance</button>
         </div>
 
         <div id="feedbackTab" class="tab-content active">
@@ -42,6 +43,19 @@
         <div id="instructorsTab" class="tab-content">
             <div class="card"><h3><i class="fas fa-user-plus"></i> Add New Instructor</h3><form id="instructorForm"><div class="form-group"><input type="text" id="instName" placeholder="Full Name" required></div><div class="form-group"><select id="instDept" required><option value="">Select Department</option><option>COMPUTER SCIENCE AND ENGINEERING</option><option>INFORMATION TECHNOLOGY</option><option>ARTIFICIAL INTELLIGENCE AND DATA SCIENCE</option></select></div><div class="form-group"><input type="text" id="instSubject" placeholder="Subject"></div><div class="form-group"><input type="email" id="instEmail" placeholder="Email"></div><button type="submit" class="btn">Add Instructor</button></form></div>
             <div class="card"><h3><i class="fas fa-users"></i> Existing Instructors</h3><div class="table-container"><table><thead><tr><th>Name</th><th>Department</th><th>Subject</th><th>Action</th></tr></thead><tbody id="instructorList"></tbody></table></div></div>
+        </div>
+
+        <div id="performanceTab" class="tab-content">
+            <div class="card">
+                <h3><i class="fas fa-star-half-alt"></i> Faculty Performance & Alerts</h3>
+                <p>Institute Average Rating: <span id="globalAverage" style="font-weight:bold; color:var(--primary-color);">0</span> / 5</p>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Name</th><th>Email / Mail ID</th><th>Department</th><th>Avg Rating</th><th>Feedback Count</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="performanceList"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div id="analyticsTab" class="tab-content">
@@ -60,101 +74,205 @@
                 if (!response.ok) { window.location.href = 'login.html'; return; }
                 const user = await response.json();
                 document.getElementById('userName').textContent = user.full_name;
-                loadStats(); loadAllFeedback(); loadInstructors(); loadAnalytics();
+                
+                // Load components (all starting in parallel)
+                loadStats().catch(err => console.error('Stats load failed:', err));
+                loadAllFeedback().catch(err => console.error('Feedback load failed:', err));
+                loadInstructors().catch(err => console.error('Instructors load failed:', err));
+                loadAnalytics().catch(err => console.error('Analytics load failed:', err));
+                loadPerformance().catch(err => console.error('Performance load failed:', err));
             } catch (error) {
+                console.error('Core load error:', error);
                 window.location.href = 'login.html';
             }
         }
 
         async function loadStats() {
-            const res = await fetch(`/api/admin/stats`, { credentials: 'include' });
-            const stats = await res.json();
-            document.getElementById('totalFeedback').textContent = stats.total_feedback || 0;
-            document.getElementById('avgRating').textContent = stats.average_rating || 0;
-            document.getElementById('studentCount').textContent = stats.student_count || 0;
-            document.getElementById('facultyCount').textContent = stats.instructor_count || 0;
+            try {
+                const res = await fetch(`/api/admin/stats`, { credentials: 'include' });
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                const stats = await res.json();
+                document.getElementById('totalFeedback').textContent = stats.total_feedback || 0;
+                document.getElementById('avgRating').textContent = stats.average_rating || 0;
+                document.getElementById('studentCount').textContent = stats.student_count || 0;
+                document.getElementById('facultyCount').textContent = stats.instructor_count || 0;
+            } catch (err) {
+                console.error('Stats error:', err);
+            }
         }
 
         async function loadAllFeedback() {
-            const res = await fetch(`/api/admin/all-feedback`, { credentials: 'include' });
-            const feedbacks = await res.json();
             const tbody = document.getElementById('feedbackList');
-            tbody.innerHTML = '';
-            feedbacks.forEach(fb => {
-                const row = tbody.insertRow();
-                row.insertCell(0).textContent = fb.category;
-                row.insertCell(1).textContent = fb.student_name;
-                row.insertCell(2).textContent = fb.instructor_name || fb.course_name || fb.block_name;
-                row.insertCell(3).textContent = fb.overall_rating || fb.overall_satisfaction || fb.cleanliness;
-                const sentiment = fb.sentiment_label || fb.prediction_label || 'Neutral';
-                row.insertCell(4).innerHTML = `<span class="sentiment-${sentiment.toLowerCase()}">${sentiment}</span>`;
-                row.insertCell(5).textContent = fb.submission_date ? new Date(fb.submission_date).toLocaleDateString() : 'N/A';
-            });
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading feedback...</td></tr>';
+            try {
+                const res = await fetch(`/api/admin/all-feedback`, { credentials: 'include' });
+                if (!res.ok) throw new Error('Failed to fetch feedback');
+                const feedbacks = await res.json();
+                tbody.innerHTML = '';
+                if (feedbacks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No feedback found.</td></tr>';
+                    return;
+                }
+                feedbacks.forEach(fb => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = fb.category;
+                    row.insertCell(1).textContent = fb.student_name;
+                    row.insertCell(2).textContent = fb.instructor_name || fb.course_name || fb.block_name;
+                    row.insertCell(3).textContent = fb.overall_rating || fb.overall_satisfaction || fb.cleanliness;
+                    const sentiment = fb.sentiment_label || fb.prediction_label || 'Neutral';
+                    row.insertCell(4).innerHTML = `<span class="sentiment-${sentiment.toLowerCase()}">${sentiment}</span>`;
+                    row.insertCell(5).textContent = fb.submission_date ? new Date(fb.submission_date).toLocaleDateString() : 'N/A';
+                });
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Error loading feedback: ${err.message}</td></tr>`;
+            }
         }
 
         async function loadInstructors() {
-            const res = await fetch(`/api/instructors`, { credentials: 'include' });
-            const instructors = await res.json();
             const tbody = document.getElementById('instructorList');
-            tbody.innerHTML = '';
-            instructors.forEach(inst => {
-                const row = tbody.insertRow();
-                row.insertCell(0).textContent = inst.name;
-                row.insertCell(1).textContent = inst.department;
-                row.insertCell(2).textContent = inst.subject || '-';
-                const deleteBtn = document.createElement('button');
-                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
-                deleteBtn.style.background = '#dc3545';
-                deleteBtn.style.color = 'white';
-                deleteBtn.style.border = 'none';
-                deleteBtn.style.padding = '5px 10px';
-                deleteBtn.style.borderRadius = '5px';
-                deleteBtn.style.cursor = 'pointer';
-                deleteBtn.onclick = () => deleteInstructor(inst.instructor_id);
-                row.insertCell(3).appendChild(deleteBtn);
-            });
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading instructors...</td></tr>';
+            try {
+                const res = await fetch(`/api/instructors`, { credentials: 'include' });
+                if (!res.ok) throw new Error('Failed to fetch instructors');
+                const instructors = await res.json();
+                tbody.innerHTML = '';
+                if (!Array.isArray(instructors)) throw new Error('Invalid response format');
+                
+                instructors.forEach(inst => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = inst.name;
+                    row.insertCell(1).textContent = inst.department;
+                    row.insertCell(2).textContent = inst.subject || '-';
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+                    deleteBtn.style.background = '#dc3545';
+                    deleteBtn.style.color = 'white';
+                    deleteBtn.style.border = 'none';
+                    deleteBtn.style.padding = '5px 10px';
+                    deleteBtn.style.borderRadius = '5px';
+                    deleteBtn.style.cursor = 'pointer';
+                    deleteBtn.onclick = () => deleteInstructor(inst.instructor_id);
+                    row.insertCell(3).appendChild(deleteBtn);
+                });
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Error loading instructors: ${err.message}</td></tr>`;
+            }
         }
 
         async function deleteInstructor(id) {
             if (confirm('Delete this instructor?')) {
+                try {
                 await fetch(`/api/instructors/${id}`, { method: 'DELETE', credentials: 'include' });
                 loadInstructors();
+                } catch(err) { alert('Failed to delete instructor'); }
             }
         }
 
         document.getElementById('instructorForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await fetch(`/api/instructors`, {
-                method: 'POST', credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: document.getElementById('instName').value,
-                    department: document.getElementById('instDept').value,
-                    subject: document.getElementById('instSubject').value,
-                    email: document.getElementById('instEmail').value
-                })
-            });
-            e.target.reset();
-            loadInstructors();
+            try {
+                const res = await fetch(`/api/instructors`, {
+                    method: 'POST', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('instName').value,
+                        department: document.getElementById('instDept').value,
+                        subject: document.getElementById('instSubject').value,
+                        email: document.getElementById('instEmail').value
+                    })
+                });
+                if(!res.ok) throw new Error('Failed to add instructor');
+                e.target.reset();
+                loadInstructors();
+            } catch(err) { alert('Error: ' + err.message); }
         });
 
         async function loadAnalytics() {
-            const res = await fetch(`/api/admin/stats`, { credentials: 'include' });
-            const stats = await res.json();
-            if (distributionChart) distributionChart.destroy();
-            const ctx = document.getElementById('distributionChart').getContext('2d');
-            distributionChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: Object.keys(stats.distribution || {}), datasets: [{ data: Object.values(stats.distribution || {}), backgroundColor: ['#48246E', '#6a3a9e', '#8b5ecf', '#b088f0', '#d4b8ff'] }] }
-            });
+            try {
+                const res = await fetch(`/api/admin/stats`, { credentials: 'include' });
+                if(!res.ok) throw new Error('Failed to fetch analytics');
+                const stats = await res.json();
+                if (distributionChart) distributionChart.destroy();
+                const ctx = document.getElementById('distributionChart').getContext('2d');
+                distributionChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(stats.distribution || {}), datasets: [{ data: Object.values(stats.distribution || {}), backgroundColor: ['#48246E', '#6a3a9e', '#8b5ecf', '#b088f0', '#d4b8ff'] }] }
+                });
+            } catch(err) { console.error('Analytics error:', err); }
         }
 
-        function showTab(tab) {
+        async function loadPerformance() {
+            const tbody = document.getElementById('performanceList');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading performance data...</td></tr>';
+            try {
+                const res = await fetch(`/api/admin/faculty-performance`, { credentials: 'include' });
+                if(!res.ok) throw new Error('Failed to fetch performance');
+                const data = await res.json();
+                document.getElementById('globalAverage').textContent = data.global_average;
+                tbody.innerHTML = '';
+                data.performances.forEach(perf => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = perf.name;
+                    row.insertCell(1).style.fontSize = '0.9em';
+                    row.insertCell(1).textContent = perf.email || 'N/A';
+                    row.insertCell(2).textContent = perf.department;
+                    row.insertCell(3).innerHTML = `<strong>${parseFloat(perf.avg_rating).toFixed(1)}</strong>`;
+                    row.insertCell(4).textContent = perf.feedback_count;
+                    
+                    const isBelowAvg = parseFloat(perf.avg_rating) < parseFloat(data.global_average) && perf.feedback_count > 0;
+                    const isCriticallyLow = parseFloat(perf.avg_rating) < 3.0 && perf.feedback_count > 0;
+                    
+                    let statusHtml = '';
+                    if (isCriticallyLow) {
+                        statusHtml = '<span style="color:#d9534f; font-weight:bold;"><i class="fas fa-exclamation-triangle"></i> Rating < 3.0</span>';
+                    } else if (isBelowAvg) {
+                        statusHtml = '<span style="color:#f0ad4e; font-weight:bold;"><i class="fas fa-exclamation-circle"></i> Below Avg</span>';
+                    } else {
+                        statusHtml = '<span style="color:#5cb85c;"><i class="fas fa-check-circle"></i> Good</span>';
+                    }
+                    row.insertCell(4).innerHTML = statusHtml;
+                    
+                    const btnCell = row.insertCell(5);
+                    if (isCriticallyLow || isBelowAvg) {
+                        const message = isCriticallyLow ? `Your course rating (${parseFloat(perf.avg_rating).toFixed(1)}) is below the required threshold of 3.0. Please review your teaching materials immediately.` : 'Your feedback performance is slightly below the institute average.';
+                        btnCell.innerHTML = `<button onclick="sendAlert('${perf.name}', '${message}')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;"><i class="fas fa-bell"></i> Send Alert</button>`;
+                    } else {
+                        btnCell.textContent = '-';
+                    }
+                });
+            } catch(err) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Error loading performance: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function sendAlert(facultyName) {
+            if (confirm(`Send improvement alert to ${facultyName}?`)) {
+                try {
+                await fetch(`/api/admin/send-alert`, {
+                    method: 'POST', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ faculty_name: facultyName })
+                });
+                alert('Alert sent successfully!');
+                } catch(err) { alert('Failed to send alert'); }
+            }
+        }
+
+        function showTab(tab, event) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById(`${tab}Tab`).classList.add('active');
+            const targetTab = document.getElementById(`${tab}Tab`);
+            if(targetTab) targetTab.classList.add('active');
+            
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+            if(event && event.target) {
+                // Handle click on icon vs button
+                const btn = event.target.closest('.tab-btn');
+                if(btn) btn.classList.add('active');
+            }
+            
             if (tab === 'analytics') loadAnalytics();
+            if (tab === 'performance') loadPerformance();
+            if (tab === 'instructors') loadInstructors();
         }
 
         async function logout() { 

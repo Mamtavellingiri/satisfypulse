@@ -6,6 +6,22 @@
     <title>Login - SatisfyPulse</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        // Auto-login persistence check
+        fetch('/api/me', { credentials: 'include' })
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error('Not logged in');
+            })
+            .then(user => {
+                if (user && user.role) {
+                    if (user.role === 'student') window.location.replace('student.html');
+                    else if (user.role === 'faculty') window.location.replace('faculty.html');
+                    else if (user.role === 'admin') window.location.replace('admin.html');
+                }
+            })
+            .catch(err => console.log('Session check: Not logged in'));
+    </script>
 </head>
 <body>
     <div class="purple-bar"></div>

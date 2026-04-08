@@ -44,14 +44,15 @@
             </div>
         </div>
 
+        <div id="adminAlertContainer"></div>
         <div id="adminRemarkContainer"></div>
 
         <div class="card">
-            <h3><i class="fas fa-list"></i> Feedback Received</h3>
+            <h3><i class="fas fa-list"></i> Academic Feedback (Course-wise)</h3>
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr><th>Student Name</th><th>Subject</th><th>Teaching</th><th>Punctuality</th><th>Doubt Clearing</th><th>Overall</th><th>Comments</th><th>Sentiment</th><th>Date</th>
+                        <tr><th>Student</th><th>Course</th><th>Clarity</th><th>Materials</th><th>Time Mgmt</th><th>Syllabus</th><th>Total</th><th>Sentiment</th><th>Date</th>
                     </thead>
                     <tbody id="feedbackList"></tbody>
                 </table>
@@ -75,9 +76,41 @@
                 const user = await response.json();
                 document.getElementById('userName').textContent = user.full_name;
                 document.getElementById('facultyName').textContent = user.full_name.split(' ')[0];
+                
+                // Load metrics and alerts
+                loadAlerts();
                 loadFeedback();
             } catch (error) {
                 window.location.href = 'login.html';
+            }
+        }
+
+        async function loadAlerts() {
+            try {
+                const response = await fetch(`/api/faculty/my-alerts`, { 
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const alerts = await response.json();
+                const container = document.getElementById('adminAlertContainer');
+                
+                if (alerts.length > 0) {
+                    container.innerHTML = alerts.map(alert => `
+                        <div class="card" style="background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); color: #c53030; border-left: 5px solid #c53030; margin-bottom: 20px;">
+                            <h3 style="color: #c53030;"><i class="fas fa-exclamation-circle"></i> Official Admin Alert</h3>
+                            <p style="margin-top: 10px; font-size: 16px; font-weight: 500;">
+                                ${alert.message}
+                            </p>
+                            <small style="opacity: 0.7; display: block; margin-top: 5px;">
+                                Received on: ${new Date(alert.created_at).toLocaleString()}
+                            </small>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error loading alerts:', error);
             }
         }
 
@@ -97,19 +130,19 @@
                 feedbacks.forEach(fb => {
                     const row = tbody.insertRow();
                     row.insertCell(0).textContent = fb.student_name || 'Anonymous';
-                    row.insertCell(1).textContent = fb.subject || 'N/A';
-                    row.insertCell(2).textContent = fb.teaching_quality || 'N/A';
-                    row.insertCell(3).textContent = fb.punctuality || 'N/A';
-                    row.insertCell(4).textContent = fb.doubt_clearing || 'N/A';
-                    row.insertCell(5).textContent = fb.overall_rating || 'N/A';
-                    row.insertCell(6).textContent = fb.comments?.substring(0, 50) || '';
+                    row.insertCell(1).textContent = fb.course_name || 'N/A';
+                    row.insertCell(2).textContent = fb.clarity || '0';
+                    row.insertCell(3).textContent = fb.materials || '0';
+                    row.insertCell(4).textContent = fb.time_management || '0';
+                    row.insertCell(5).textContent = fb.syllabus_coverage || '0';
+                    row.insertCell(6).textContent = fb.overall_satisfaction || '0';
                     
-                    const sentiment = fb.sentiment_label || 'Neutral';
+                    const sentiment = fb.prediction_label || 'Neutral';
                     row.insertCell(7).innerHTML = `<span class="sentiment-${sentiment.toLowerCase()}">${sentiment}</span>`;
                     row.insertCell(8).textContent = fb.submission_date ? new Date(fb.submission_date).toLocaleDateString() : 'N/A';
                     
                     total++;
-                    sum += fb.overall_rating || 0;
+                    sum += fb.overall_satisfaction || 0;
                     if (sentiment === 'Positive') positive++;
                 });
                 
@@ -122,9 +155,9 @@
                 if (total > 0 && parseFloat(avgRating) < 3.0) {
                     remarkContainer.innerHTML = `
                         <div class="card" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); color: #856404; border-left: 5px solid #ffc107; margin-bottom: 20px;">
-                            <h3 style="color: #856404;"><i class="fas fa-exclamation-triangle"></i> Admin Remark</h3>
+                            <h3 style="color: #856404;"><i class="fas fa-exclamation-triangle"></i> System Warning</h3>
                             <p style="margin-top: 10px; font-size: 16px; opacity: 0.9;">
-                                Your average feedback rating is below expected standards. Please analyze your feedback and update your teaching methodologies to improve the student experience.
+                                Your average rating is currently ${avgRating}. The system has flagged this for review.
                             </p>
                         </div>
                     `;
